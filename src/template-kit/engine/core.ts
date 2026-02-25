@@ -136,8 +136,9 @@ class Engine {
     // Apply spectrum tokens immediately
     this.applySpectrumCSS()
 
-    // Bind scroll listener
-    window.addEventListener("scroll", this.handleScroll, { passive: true })
+    // DEV/Fast Refresh safety: prevent duplicate listeners
+window.removeEventListener("scroll", this.handleScroll)
+window.addEventListener("scroll", this.handleScroll, { passive: true })
     this.handleScroll()
 
     this._systemState = "IDLE"
@@ -370,6 +371,20 @@ class Engine {
   // Internal notify (rebuild cached snapshot + ping listeners)
   // ========================================================
 
+  /**
+   * Notifies all snapshot listeners of state changes.
+   * 
+   * Creates a new cached snapshot object only when state changes, ensuring
+   * a stable reference between updates for useSyncExternalStore compatibility.
+   * This maintains referential equality for unchanged snapshots, allowing
+   * external subscribers to detect actual state mutations.
+   * 
+   * @remarks
+   * - Invoked whenever any tracked state property changes
+   * - Triggers all registered callbacks in {@link _snapshotListeners}
+   * - Cache strategy prevents unnecessary re-renders in React components
+   */
+  private notify(): void
   private notify() {
     // IMPORTANT: create a new object only when state changes
     // so getSnapshot() is stable between changes.

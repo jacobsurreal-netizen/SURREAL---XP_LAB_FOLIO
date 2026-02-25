@@ -1,0 +1,50 @@
+SURREAL XP LAB – AI WORKING RULES 
+ 
+This project uses a layered architecture. 
+ 
+ARCHITECTURE LAYERS: 
+ 
+1) template-kit/ 
+Reusable, monetizable core system. 
+Must remain neutral. 
+No brand-specific or private logic allowed. 
+ 
+2) private-build/ 
+Contains project-specific logic, narrative, and experimental layers. 
+Must not leak into template-kit. 
+ 
+3) engine/ 
+State machine + scroll logic + telemetry. 
+Must preserve useSyncExternalStore contract: 
+- getSnapshot must return stable reference 
+- subscribe must use void listeners 
+- no object recreation outside notify() 
+ 
+RULES FOR AI MODIFICATIONS: 
+ 
+- Do NOT refactor architecture unless explicitly asked. 
+- Do NOT rename public APIs. 
+- Do NOT change file structure. 
+- Do NOT introduce additional state managers. 
+- Do NOT modify snapshot shape without warning. 
+- Do NOT introduce new dependencies without approval. 
+ 
+When making changes: 
+- Show diff only. 
+- Explain reasoning briefly. 
+- Keep patch minimal. 
+- Preserve performance constraints. 
+ 
+PERFORMANCE CONSTRAINTS: 
+ 
+- Scroll must remain smooth. 
+- Snap animation must not exceed 30fps re-render rate. 
+- Telemetry must remain throttled. 
+- No excessive React re-renders. 
+ 
+If uncertain: 
+- Ask before modifying core engine logic. 
+- Never guess architectural intent. 
+ 
+This system is intentionally minimal and state-driven. 
+Respect the structure. 
