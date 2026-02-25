@@ -1,0 +1,774 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Shadcn/ui Default Light Theme Colors (Overridden by Jacob Surreal where applicable) */
+  --background: oklch(1 0 0); /* will be overridden by user's --background */
+  --foreground: oklch(0.145 0 0); /* will be overridden by user's --foreground */
+  --card: oklch(1 0 0); /* will be overridden by user's --card */
+  --card-foreground: oklch(0.145 0 0); /* will be overridden by user's --card-foreground */
+  --popover: oklch(1 0 0); /* will be overridden by user's --popover */
+  --popover-foreground: oklch(0.145 0 0); /* will be overridden by user's --popover-foreground */
+  --primary: oklch(0.205 0 0); /* will be overridden by user's --primary */
+  --primary-foreground: oklch(0.985 0 0); /* will be overridden by user's --primary-foreground */
+  --secondary: oklch(0.97 0 0); /* will be overridden by user's --secondary */
+  --secondary-foreground: oklch(0.205 0 0); /* will be overridden by user's --secondary-foreground */
+  --muted: oklch(0.97 0 0); /* will be overridden by user's --muted */
+  --muted-foreground: oklch(0.556 0 0); /* will be overridden by user's --muted-foreground */
+  --accent: oklch(0.97 0 0); /* will be overridden by user's --accent */
+  --accent-foreground: oklch(0.205 0 0); /* will be overridden by user's --accent-foreground */
+  --destructive: oklch(0.577 0.245 27.325); /* will be overridden by user's --destructive */
+  --destructive-foreground: oklch(0.577 0.245 27.325); /* will be overridden by user's --destructive-foreground */
+  --border: oklch(0.922 0 0); /* will be overridden by user's --border */
+  --input: oklch(0.922 0 0); /* will be overridden by user's --input */
+  --ring: oklch(0.708 0 0); /* will be overridden by user's --ring */
+  --chart-1: oklch(0.646 0.222 41.116); /* will be overridden by user's --chart-1 */
+  --chart-2: oklch(0.6 0.118 184.704); /* will be overridden by user's --chart-2 */
+  --chart-3: oklch(0.398 0.07 227.392); /* will be overridden by user's --chart-3 */
+  --chart-4: oklch(0.828 0.189 84.429); /* will be overridden by user's --chart-4 */
+  --chart-5: oklch(0.769 0.188 70.08); /* will be overridden by user's --chart-5 */
+  --radius: 0.625rem; /* will be overridden by user's --radius */
+
+  /* Sidebar colors from Shadcn/ui default */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Jacob Surreal - Dark Sci-Fi Theme (User's preserved colors) */
+  --background: #040b0a;
+  --foreground: #cbebe5;
+  --card: #081216;
+  --card-foreground: #cbebe5;
+  --popover: #081216;
+  --popover-foreground: #cbebe5;
+  --primary: #40ebff;
+  --primary-foreground: #040b0a;
+  --secondary: #3ab7d4;
+  --secondary-foreground: #040b0a;
+  --muted: #0d1f1c;
+  --muted-foreground: #7a9a94;
+  --accent: #00d15b;
+  --accent-foreground: #040b0a;
+  --destructive: #ff4757;
+  --destructive-foreground: #cbebe5;
+  --border: rgba(64, 235, 255, 0.15);
+  --input: rgba(64, 235, 255, 0.1);
+  --ring: #40ebff;
+  --chart-1: #40ebff;
+  --chart-2: #3ab7d4;
+  --chart-3: #00d15b;
+  --chart-4: #cbebe5;
+  --chart-5: #7a9a94;
+  --radius: 0.75rem;
+  
+  /* Custom colors for this theme */
+  --cyan-glow: #40ebff;
+  --light-surface: #cbebe5;
+  --dark-surface: #040b0a;
+  --medium-surface: #081216;
+  --success: #00d15b;
+
+  /* Spectrum tokens - COLOR mode defaults */
+  --hud-ink: rgba(64, 235, 255, 0.30);
+  --hud-accent: #40ebff;
+  --hud-accent-dim: rgba(64, 235, 255, 0.15);
+  --hud-grid: rgba(64, 235, 255, 0.04);
+  --hud-glow: rgba(64, 235, 255, 0.20);
+  --hud-text: rgba(203, 235, 229, 0.80);
+  --hud-text-dim: rgba(203, 235, 229, 0.35);
+  --world-tint: transparent;
+  --world-bg: #040b0a;
+  --world-radial: rgba(64, 235, 255, 0.03);
+}
+
+/* ---- Reduced-motion overrides ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+  }
+}
+ 
+.dark {
+  /* Shadcn/ui Default Dark Theme Colors */
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --font-sans: 'Space Grotesk', 'Space Grotesk Fallback', system-ui, sans-serif;
+  --font-heading: 'Rajdhani', 'Rajdhani Fallback', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-cyan-glow: var(--cyan-glow);
+  --color-light-surface: var(--light-surface);
+  --color-dark-surface: var(--dark-surface);
+  --color-medium-surface: var(--medium-surface);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+  background: #040b0a;
+  color: #cbebe5;
+}
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(64, 235, 255, 0.5), 0 0 40px rgba(64, 235, 255, 0.3);
+  }
+
+  .box-glow {
+    box-shadow: 0 0 20px rgba(64, 235, 255, 0.3), 0 0 40px rgba(64, 235, 255, 0.1);
+  }
+
+  .box-glow-hover {
+    box-shadow: 0 0 30px rgba(64, 235, 255, 0.5), 0 0 60px rgba(64, 235, 255, 0.2);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(180deg, #040b0a 0%, #081820 50%, #0a1f25 100%);
+  }
+
+  .gradient-about {
+    background: linear-gradient(180deg, #0a1f25 0%, #cbebe5 30%, #cbebe5 70%, #0d1f1c 100%);
+  }
+
+  .gradient-projects {
+    background: linear-gradient(180deg, #0d1f1c 0%, #040b0a 30%, #040b0a 100%);
+  }
+}
+
+/* Glitch Text Effects */
+@layer utilities {
+  .glitch-text {
+    position: relative;
+    animation: glitch-main 4s infinite;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  .glitch-text::before {
+    color: #40ebff;
+    animation: glitch-before 4s infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  }
+
+  .glitch-text::after {
+    color: #00d15b;
+    animation: glitch-after 4s infinite;
+    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  }
+
+  .glitch-subtle {
+    animation: glitch-subtle-main 6s infinite;
+  }
+
+  .glitch-subtle::before,
+  .glitch-subtle::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  .glitch-subtle::before {
+    color: #40ebff;
+    animation: glitch-subtle-shift 6s infinite;
+  }
+
+  .glitch-subtle::after {
+    color: #3ab7d4;
+    animation: glitch-subtle-shift 6s infinite 0.05s;
+  }
+}
+
+@keyframes glitch-main {
+  0%, 92%, 100% {
+    transform: translate(0);
+    opacity: 1;
+  }
+  93% {
+    transform: translate(-2px, 0);
+    opacity: 0.85;
+  }
+  94% {
+    transform: translate(2px, 0);
+    opacity: 0.9;
+  }
+  95% {
+    transform: translate(-1px, 1px);
+    opacity: 0.85;
+  }
+  96% {
+    transform: translate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glitch-before {
+  0%, 92%, 96%, 100% {
+    opacity: 0;
+    transform: translate(0);
+  }
+  93% {
+    opacity: 0.7;
+    transform: translate(3px, 0);
+  }
+  94% {
+    opacity: 0.5;
+    transform: translate(-2px, 0);
+  }
+  95% {
+    opacity: 0.6;
+    transform: translate(2px, 0);
+  }
+}
+
+@keyframes glitch-after {
+  0%, 92%, 96%, 100% {
+    opacity: 0;
+    transform: translate(0);
+  }
+  93% {
+    opacity: 0.5;
+    transform: translate(-3px, 0);
+  }
+  94% {
+    opacity: 0.7;
+    transform: translate(2px, 0);
+  }
+  95% {
+    opacity: 0.4;
+    transform: translate(-1px, 0);
+  }
+}
+
+@keyframes glitch-subtle-main {
+  0%, 95%, 100% {
+    transform: translate(0);
+    opacity: 1;
+  }
+  96% {
+    transform: translate(-1px, 0);
+    opacity: 0.9;
+  }
+  97% {
+    transform: translate(1px, 0);
+    opacity: 0.95;
+  }
+  98% {
+    transform: translate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glitch-subtle-shift {
+  0%, 95%, 98%, 100% {
+    opacity: 0;
+    transform: translate(0);
+  }
+  96% {
+    opacity: 0.3;
+    transform: translate(2px, 0);
+  }
+  97% {
+    opacity: 0.2;
+    transform: translate(-1px, 0);
+  }
+}
+
+.glitch-alt {
+  animation: glitch-alt-main 9s infinite;
+}
+
+@keyframes glitch-alt-main {
+  0%, 95%, 100% { transform: translate(0); opacity: 1; }
+  93% { transform: translate(-1px, 0); opacity: 0.9; }
+  95% { transform: translate(1px, -1px); opacity: 0.9; }
+  98% { transform: translate(0); opacity: 1; }
+}
+
+.glitch-strobe {
+  animation: glitch-strobe 14s infinite;
+}
+
+@keyframes glitch-strobe {
+  0%, 94%, 100% {
+    opacity: 1;
+    filter: none;
+  }
+  95% {
+    opacity: 0.3;
+    filter: brightness(1.6);
+  }
+  95.5% {
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+  96% {
+    opacity: 0.4;
+    filter: brightness(1.7);
+  }
+  97% {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+.glitch-malfunction {
+  animation: glitch-malfunction 8s infinite;
+}
+
+.glitch-malfunction {
+  animation: glitch-malfunction 8s infinite;
+}
+
+@keyframes glitch-malfunction {
+  0%, 82%, 100% {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: none;
+  }
+  84% {
+    opacity: 0.5;
+    transform: translate(-1px, 0);
+    filter: hue-rotate(10deg);
+  }
+  86% {
+    opacity: 0.2;
+    transform: translate(1px, 0);
+    filter: hue-rotate(-10deg);
+  }
+  88% {
+    opacity: 0.6;
+    transform: translate(-1px, 1px);
+    filter: hue-rotate(5deg);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: none;
+  }
+}
+
+.glitch-flip {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-flip::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  opacity: 0;
+  pointer-events: none;
+  color: #00FA9A; /* neon tyrkys pro flip vrstvu */
+}
+
+.glitch-flip {
+  animation: glitch-flip-main 12s infinite steps(1, end);
+}
+
+.glitch-flip::after {
+  animation: glitch-flip-shadow 12s infinite steps(1, end);
+}
+
+@keyframes glitch-flip-main {
+  0%, 89%, 100% {
+    transform: none;
+  }
+  90% {
+    transform: none;
+  }
+  91% {
+    transform: scaleY(-1);
+  }
+  92% {
+    transform: none;
+  }
+}
+
+@keyframes glitch-flip-shadow {
+  0%, 89%, 100% {
+    opacity: 0;
+    transform: translate(0, 0) scaleY(1);
+  }
+  90% {
+    opacity: 0;
+  }
+  91% {
+    opacity: 0.9;
+    transform: translate(1px, -1px) scaleY(-1);
+  }
+  92% {
+    opacity: 0;
+    transform: translate(0, 0) scaleY(1);
+  }
+}
+
+.glitch-shiver {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-shiver::before,
+.glitch-shiver::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.glitch-shiver::before {
+  color: #40ebff;
+}
+
+.glitch-shiver::after {
+  color: #3ab7d4;
+}
+
+.glitch-shiver {
+  animation: glitch-shiver-main 7s infinite steps(1, end);
+}
+
+.glitch-shiver::before {
+  animation: glitch-shiver-before 7s infinite steps(1, end);
+}
+
+.glitch-shiver::after {
+  animation: glitch-shiver-after 7s infinite steps(1, end);
+}
+
+@keyframes glitch-shiver-main {
+  0%, 90%, 100% {
+    transform: none;
+    filter: none;
+  }
+  91% {
+    transform: skewX(2deg);
+    filter: blur(0.3px);
+  }
+  92% {
+    transform: skewX(-2deg);
+    filter: blur(0.4px);
+  }
+  93% {
+    transform: skewX(1deg);
+    filter: blur(0.2px);
+  }
+  94% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes glitch-shiver-before {
+  0%, 90%, 100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  91% {
+    opacity: 0.5;
+    transform: translate(-1px, -1px);
+  }
+  92% {
+    opacity: 0.7;
+    transform: translate(2px, 0);
+  }
+  93% {
+    opacity: 0.4;
+    transform: translate(-2px, 1px);
+  }
+  94% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes glitch-shiver-after {
+  0%, 90%, 100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  91% {
+    opacity: 0.4;
+    transform: translate(1px, 1px);
+  }
+  92% {
+    opacity: 0.6;
+    transform: translate(-2px, 0);
+  }
+  93% {
+    opacity: 0.3;
+    transform: translate(2px, -1px);
+  }
+  94% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+
+.hud-ring {
+  transform-origin: 50% 50%;
+}
+
+.hud-ring-slow {
+  animation: hud-rotate-slow 32s linear infinite;
+}
+
+.hud-ring-medium {
+  animation: hud-rotate-medium 22s linear infinite;
+}
+
+.hud-ring-fast {
+  animation: hud-rotate-fast 14s linear infinite;
+}
+
+@keyframes hud-rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hud-rotate-medium {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes hud-rotate-fast {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hud-sweep {
+  transform-origin: 50% 50%;
+  animation: hud-sweep-rotate 10s linear infinite;
+  opacity: 0.9;
+}
+
+@keyframes hud-sweep-rotate {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.hud-dot-glitch {
+  animation: hud-dot-glitch 7s infinite steps(1, end);
+}
+
+@keyframes hud-dot-glitch {
+  0%, 92%, 100% {
+    transform: translate(0, 0);
+  }
+  93% {
+    transform: translate(-1px, -1px);
+  }
+  94% {
+    transform: translate(1px, 1px);
+  }
+  95% {
+    transform: translate(-1px, 0);
+  }
+  96%, 99% {
+    transform: translate(0, 0);
+  }
+}
+
+.glitch-hud {
+  position: relative;
+}
+
+.glitch-hud::before,
+.glitch-hud::after {
+  content: "";
+  position: absolute;
+  inset: 55;
+  border-radius: 9999px;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.glitch-hud::before {
+  border: 1px solid #40ebff;
+}
+
+.glitch-hud::after {
+  border: 1px solid #00d15b;
+}
+
+.glitch-hud::before,
+.glitch-hud::after {
+  animation: glitch-hud-shift 5s infinite steps(1, end);
+}
+
+@keyframes glitch-hud-shift {
+  0%, 92%, 100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  93% {
+    opacity: 0.7;
+    transform: translate(-1px, -1px);
+  }
+  94% {
+    opacity: 0.4;
+    transform: translate(1px, 1px);
+  }
+  95% {
+    opacity: 0.8;
+    transform: translate(-1px, 0);
+  }
+  96%, 99% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+.cyber-glow {
+  position: relative;
+}
+
+.cyber-glow::before {
+  content: "";
+  position: absolute;
+  inset: 26px;
+  border-radius: 9999px;
+  border: 1px solid rgba(64, 235, 255, 0.35);
+  box-shadow:
+    0 0 14px rgba(64, 235, 255, 0.5),
+    0 0 32px rgba(0, 209, 91, 0.35);
+  opacity: 0.5;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: cyber-glow-pulse 5s ease-in-out infinite;
+}
+
+@keyframes cyber-glow-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50%      { opacity: 0.7;  transform: scale(1.02); }
+}
