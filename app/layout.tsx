@@ -3,6 +3,7 @@ import React from "react"
 import { Rajdhani, Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import { Providers } from "./providers"
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -48,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${rajdhani.variable} ${spaceGrotesk.variable}`}>
       <body>
-        {children}
+        <Providers>{children}</Providers>
         <Analytics />
       </body>
     </html>
