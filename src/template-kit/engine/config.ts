@@ -27,6 +27,8 @@ export const defaultSettings: EngineDefaults = {
   telemetryThrottleMs: 60, // ~16 fps
 }
 
+export const storageNamespace = "jacob-surreal"
+
 export const accessibility = {
   prefersReducedMotion: false, // hydrated at runtime
 }
@@ -77,7 +79,7 @@ export const dictionary: Record<string, Record<Language, string>> = {
     DE: "LEERLAUF", 
     JP: "\u5F85\u6A5F" 
   },
-  
+
   SECTOR_LABEL: { EN: "SECTOR", CS: "SEKTOR", DE: "SEKTOR", JP: "\u30BB\u30AF\u30BF\u30FC" },
   SPECTRUM: { EN: "SPECTRUM", CS: "SPEKTRUM", DE: "SPEKTRUM", JP: "\u30B9\u30DA\u30AF\u30C8\u30EB" },
   LANG: { EN: "LANG", CS: "JAZYK", DE: "SPRACHE", JP: "\u8A00\u8A9E" },
