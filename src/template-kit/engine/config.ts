@@ -65,8 +65,19 @@ export const spectrumTokens: Record<SpectrumMode, Record<string, string>> = {
 // ── i18n dictionary ────────────────────────────────────────
 
 export const dictionary: Record<string, Record<Language, string>> = {
-  SYSTEM_LINK: { EN: "SYSTEM_LINK: STABLE", CS: "SYSTEM_LINK: STABILNI", DE: "SYSTEM_LINK: STABIL", JP: "SYSTEM_LINK: \u5B89\u5B9A" },
-  PROBE_STATE: { EN: "PROBE_STATE: IDLE", CS: "PROBE_STATE: KLID", DE: "PROBE_STATE: LEERLAUF", JP: "PROBE_STATE: \u5F85\u6A5F" },
+  SYSTEM_LINK: { 
+    EN: "STABLE", 
+    CS: "STABILNÍ", 
+    DE: "STABIL", 
+    JP: "\u5B89\u5B9A" 
+  },
+  PROBE_STATE: { 
+    EN: "IDLE", 
+    CS: "KLID", 
+    DE: "LEERLAUF", 
+    JP: "\u5F85\u6A5F" 
+  },
+  
   SECTOR_LABEL: { EN: "SECTOR", CS: "SEKTOR", DE: "SEKTOR", JP: "\u30BB\u30AF\u30BF\u30FC" },
   SPECTRUM: { EN: "SPECTRUM", CS: "SPEKTRUM", DE: "SPEKTRUM", JP: "\u30B9\u30DA\u30AF\u30C8\u30EB" },
   LANG: { EN: "LANG", CS: "JAZYK", DE: "SPRACHE", JP: "\u8A00\u8A9E" },

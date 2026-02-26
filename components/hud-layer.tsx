@@ -51,13 +51,13 @@ export function HUDLayer({
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
             style={{ color: "var(--hud-ink)" }}
           >
-            {t("SYSTEM_LINK")}
+            {`SYSTEM_LINK: ${t("SYSTEM_LINK")}`}
           </span>
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
             style={{ color: "var(--hud-ink)" }}
           >
-            {t("PROBE_STATE")}
+            {`PROBE_STATE: ${t("PROBE_STATE")}`}
           </span>
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
