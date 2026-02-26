@@ -17,7 +17,13 @@ import type {
   EngineSnapshot,
 } from "./types"
 import { SECTOR_NAMES } from "./types"
-import { sectors, defaultSettings, spectrumTokens, dictionary } from "./config"
+import {
+  sectors,
+  defaultSettings,
+  spectrumTokens,
+  dictionary,
+  storageNamespace,
+} from "./config"
 
 // ── helpers ─────────────────────────────────────────────────
 
@@ -61,6 +67,11 @@ function snapDuration(): number {
 }
 
 // ── Storage helpers ─────────────────────────────────────────
+
+const STORAGE_KEYS = {
+  spectrum: `${storageNamespace}-spectrum`,
+  lang: `${storageNamespace}-lang`,
+} as const
 
 function loadStored<T>(key: string, valid: readonly string[], fallback: T): T {
   try {
@@ -123,12 +134,12 @@ class Engine {
 
     // Hydrate persisted values
     this._spectrum = loadStored(
-      "jacob-surreal-spectrum",
+      STORAGE_KEYS.spectrum,
       ["COLOR", "IR"],
       defaultSettings.spectrum
     )
     this._language = loadStored(
-      "jacob-surreal-lang",
+      STORAGE_KEYS.lang,
       ["EN", "CS", "DE", "JP"],
       defaultSettings.language
     )
@@ -137,8 +148,8 @@ class Engine {
     this.applySpectrumCSS()
 
     // DEV/Fast Refresh safety: prevent duplicate listeners
-window.removeEventListener("scroll", this.handleScroll)
-window.addEventListener("scroll", this.handleScroll, { passive: true })
+    window.removeEventListener("scroll", this.handleScroll)
+    window.addEventListener("scroll", this.handleScroll, { passive: true })
     this.handleScroll()
 
     this._systemState = "IDLE"
@@ -176,7 +187,7 @@ window.addEventListener("scroll", this.handleScroll, { passive: true })
         this.goToSector((this._sectorIndex + 1) % sectors.length)
         break
       case "COMMAND/PREV_SECTOR":
-        this.goToSector(((this._sectorIndex - 1 + sectors.length) % sectors.length) as number)
+        this.goToSector((this._sectorIndex - 1 + sectors.length) % sectors.length)
         break
       case "COMMAND/SET_SPECTRUM":
         this.setSpectrum(payload as SpectrumMode)
@@ -313,13 +324,16 @@ window.addEventListener("scroll", this.handleScroll, { passive: true })
 
   private setSpectrum(mode: SpectrumMode) {
     this._spectrum = mode
-    saveStored("jacob-surreal-spectrum", mode)
+    saveStored(STORAGE_KEYS.spectrum, mode)
     this.applySpectrumCSS()
     this.notify()
   }
 
   toggleSpectrum() {
-    this.dispatch("COMMAND/SET_SPECTRUM", this._spectrum === "COLOR" ? "IR" : "COLOR")
+    this.dispatch(
+      "COMMAND/SET_SPECTRUM",
+      this._spectrum === "COLOR" ? "IR" : "COLOR"
+    )
   }
 
   private applySpectrumCSS() {
@@ -337,7 +351,7 @@ window.addEventListener("scroll", this.handleScroll, { passive: true })
 
   private setLanguage(lang: Language) {
     this._language = lang
-    saveStored("jacob-surreal-lang", lang)
+    saveStored(STORAGE_KEYS.lang, lang)
     this.notify()
   }
 
@@ -371,23 +385,8 @@ window.addEventListener("scroll", this.handleScroll, { passive: true })
   // Internal notify (rebuild cached snapshot + ping listeners)
   // ========================================================
 
-  /**
-   * Notifies all snapshot listeners of state changes.
-   * 
-   * Creates a new cached snapshot object only when state changes, ensuring
-   * a stable reference between updates for useSyncExternalStore compatibility.
-   * This maintains referential equality for unchanged snapshots, allowing
-   * external subscribers to detect actual state mutations.
-   * 
-   * @remarks
-   * - Invoked whenever any tracked state property changes
-   * - Triggers all registered callbacks in {@link _snapshotListeners}
-   * - Cache strategy prevents unnecessary re-renders in React components
-   */
   private notify(): void
   private notify() {
-    // IMPORTANT: create a new object only when state changes
-    // so getSnapshot() is stable between changes.
     this._cachedSnapshot = {
       systemState: this._systemState,
       sectorIndex: this._sectorIndex,
