@@ -4,6 +4,8 @@ import { Rajdhani, Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Providers } from "./providers"
+import { HudSkeleton } from "@/src/hud/hud-skeleton"
+import { SdiOverlay } from "@/src/sdi/sdi-overlay"
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
@@ -49,6 +51,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${rajdhani.variable} ${spaceGrotesk.variable}`}>
       <body>
+        <HudSkeleton />
+        <SdiOverlay />
         <Providers>{children}</Providers>
         <Analytics />
       </body>
