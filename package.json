@@ -2,10 +2,12 @@
   "name": "my-surreal-portfolio",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.15.5",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "preinstall": "npx only-allow pnpm"
   },
