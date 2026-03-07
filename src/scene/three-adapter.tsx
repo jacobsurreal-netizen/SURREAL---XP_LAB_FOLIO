@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createHeroAsset } from './objects/create-hero-asset';
+import { frameObject } from './camera/framing';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -95,30 +96,19 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
       scene.add(asset);
       heroAsset = asset;
 
-      // --- Task: Automatic Camera Framing Tuning ---
-      const box = new THREE.Box3().setFromObject(asset);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
+      // --- Camera Framing via reusable helper ---
+      const framing = frameObject(camera, asset, {
+        distanceFactor: 1.8,
+        offsetY: 0,
+      });
 
-      // Significantly closer framing (Target ~1.38x maxDim)
-      const distance = maxDim * 0.58;
-
-      // Position with vertical bias and lateral composition offset
-      camera.position.set(
-        center.x, 
-        center.y, 
-        center.z + distance
-      );
-      camera.lookAt(center);
-
-      // Store base transform for breathing and orbit effects
+      // Store base transform for breathing, orbit, and parallax effects
       camera.userData.basePosition = camera.position.clone();
-      camera.userData.baseCenter = center.clone();
-      camera.userData.maxDim = maxDim;
-      camera.userData.orbitDistance = distance;
+      camera.userData.baseCenter = framing.center.clone();
+      camera.userData.maxDim = framing.maxDim;
+      camera.userData.orbitDistance = framing.distance;
 
-      console.log('[ThreeRuntimeAdapter] Hero asset framed with cinematic tuning');
+      console.log('[ThreeRuntimeAdapter] Hero asset framed via frameObject helper');
     }).catch((error) => {
       console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
     });
