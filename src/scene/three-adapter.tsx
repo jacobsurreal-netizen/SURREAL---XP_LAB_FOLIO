@@ -13,6 +13,10 @@ export function ThreeRuntimeAdapter() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const composerRef = useRef<EffectComposer | null>(null)
 
+  // Parallax tracking
+  const pointerRef = useRef({ x: 0, y: 0 });
+  const smoothedPointerRef = useRef({ x: 0, y: 0 });
+
   // Minimal reference for future hero asset attachment
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let heroAsset: THREE.Object3D | null = null;
@@ -140,9 +144,24 @@ export function ThreeRuntimeAdapter() {
         camera.position.y = basePos.y + breathY;
         camera.position.z = basePos.z + breathZ;
 
-        // Maintain lookAt to avoid orientation drift
+        // --- Layer: Pointer Parallax ---
+        // Lerp smoothed values toward target with soft smoothing
+        const lerpFactor = 0.065;
+        smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
+        smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
+
+        // Compose final position from base + breathing + parallax
+        camera.position.x = basePos.x + smoothedPointerRef.current.x * 0.06;
+        camera.position.y = basePos.y + breathY + smoothedPointerRef.current.y * 0.025;
+        camera.position.z = basePos.z + breathZ;
+
+        // Rebuild lookAt target from base center + subtle parallax bias
         if (camera.userData.baseCenter) {
-          camera.lookAt(camera.userData.baseCenter as THREE.Vector3);
+          const baseCenter = camera.userData.baseCenter as THREE.Vector3;
+          const target = baseCenter.clone();
+          target.x += smoothedPointerRef.current.x * 0.02;
+          target.y += smoothedPointerRef.current.y * 0.01;
+          camera.lookAt(target);
         }
       }
 
@@ -181,10 +200,35 @@ export function ThreeRuntimeAdapter() {
     };
     window.addEventListener('resize', onResize);
 
+    // --- Task: Pointer Parallax Tracking ---
+    const onMouseMove = (event: MouseEvent) => {
+      const rect = container.getBoundingClientRect();
+      const localX = (event.clientX - rect.left) / rect.width;
+      const localY = (event.clientY - rect.top) / rect.height;
+
+      // Normalize to -1 to 1 and clamp to safe ranges
+      const targetX = (localX * 2 - 1);
+      const targetY = -(localY * 2 - 1);
+
+      pointerRef.current.x = Math.max(-0.45, Math.min(0.45, targetX));
+      pointerRef.current.y = Math.max(-0.30, Math.min(0.30, targetY));
+    };
+
+    const onMouseLeave = () => {
+      // Smoothly return to center
+      pointerRef.current.x = 0;
+      pointerRef.current.y = 0;
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    container.addEventListener('mouseleave', onMouseLeave);
+
     // cleanup
     return () => {
       if (animationId.current) cancelAnimationFrame(animationId.current);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('mousemove', onMouseMove);
+      container.removeEventListener('mouseleave', onMouseLeave);
       if (rendererRef.current) {
         rendererRef.current.dispose();
         const canvas = rendererRef.current.domElement;
