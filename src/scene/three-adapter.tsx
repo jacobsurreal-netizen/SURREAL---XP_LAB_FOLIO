@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createHeroAsset } from './objects/create-hero-asset';
 import { frameObject } from './camera/framing';
+import { OrbitController } from './camera/orbit-controller';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -31,6 +32,7 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
   // Minimal reference for future hero asset attachment
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let heroAsset: THREE.Object3D | null = null;
+  let orbit: OrbitController | null = null;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -96,19 +98,20 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
       scene.add(asset);
       heroAsset = asset;
 
-      // --- Camera Framing via reusable helper ---
+      // --- Camera Framing + Orbit Controller ---
       const framing = frameObject(camera, asset, {
         distanceFactor: 1.8,
         offsetY: 0,
       });
 
-      // Store base transform for breathing, orbit, and parallax effects
-      camera.userData.basePosition = camera.position.clone();
+      orbit = new OrbitController(framing);
+
+      // Preserve userData for any downstream consumers that read it
       camera.userData.baseCenter = framing.center.clone();
       camera.userData.maxDim = framing.maxDim;
       camera.userData.orbitDistance = framing.distance;
 
-      console.log('[ThreeRuntimeAdapter] Hero asset framed via frameObject helper');
+      console.log('[ThreeRuntimeAdapter] Orbit controller initialized from framing');
     }).catch((error) => {
       console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
     });
@@ -127,38 +130,31 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
         }
       });
 
-      if (camera.userData.basePosition) {
+      // --- Orbit Controller Update ---
+      if (orbit) {
         const time = clock.elapsedTime;
-        const baseCenter = camera.userData.baseCenter as THREE.Vector3;
-        const maxDim = camera.userData.maxDim as number;
-        const orbitDistance = camera.userData.orbitDistance as number;
+        const maxDim = (camera.userData.maxDim as number) ?? 1;
 
-        // --- Task: Scroll-driven Camera Orbit ---
-        // Progress (0 to 1) rotates the camera around the Y axis
-        const orbitAngle = progressRef.current * Math.PI * 0.5; // 90 degree orbit swing
-        
-        // --- Task: Ultra-subtle Camera Breathing ---
+        // Scroll-driven azimuth (0 → π/2 = 90° swing)
+        orbit.setAzimuth(progressRef.current * Math.PI * 0.5);
+
+        // Ultra-subtle breathing offsets
         const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
         const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
 
-        // --- Layer: Pointer Parallax ---
+        // Smoothed pointer parallax
         const lerpFactor = 0.065;
         smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
         smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
 
-        // Compose spherical coordinates for orbit
-        const radius = orbitDistance + breathZ;
-        const targetPosX = baseCenter.x + radius * Math.sin(orbitAngle) + smoothedPointerRef.current.x * 0.1;
-        const targetPosY = baseCenter.y + breathY + smoothedPointerRef.current.y * 0.05;
-        const targetPosZ = baseCenter.z + radius * Math.cos(orbitAngle);
-
-        camera.position.set(targetPosX, targetPosY, targetPosZ);
-        
-        // Rebuild lookAt target from base center + subtle parallax bias
-        const target = baseCenter.clone();
-        target.x += smoothedPointerRef.current.x * 0.02;
-        target.y += smoothedPointerRef.current.y * 0.01;
-        camera.lookAt(target);
+        // Compose: orbit base + additive offsets
+        orbit.update(camera, {
+          dx: smoothedPointerRef.current.x * 0.1,
+          dy: breathY + smoothedPointerRef.current.y * 0.05,
+          dz: breathZ,
+          lookBiasX: smoothedPointerRef.current.x * 0.02,
+          lookBiasY: smoothedPointerRef.current.y * 0.01,
+        });
       }
 
       // Use composer instead of renderer
