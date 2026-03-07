@@ -1,36 +1,57 @@
 /**
- * Scroll-to-Camera Bridge — Anchor Timeline
+ * Scroll-to-Camera Bridge — Anchor Timeline with Per-Anchor Poses
  *
  * Maps normalized scroll progress (0..1) through a configurable
- * anchor array to produce orbit azimuth and height offsets.
+ * anchor array. Each anchor carries an azimuth and a camera pose.
+ * Both azimuth and pose values are interpolated between anchors.
  *
  * Default anchors: 0° → 90° → 180° → 270° → 315° (tail zone).
- * The tail zone beyond 270° is reserved for footer / gateway content.
- *
- * The anchor array can be freely retuned for per-section camera poses
- * without changing the interpolation math.
  */
 
 import * as THREE from 'three';
 
-// ── Public types ────────────────────────────────────────────────
+// ── Pose types ──────────────────────────────────────────────────
+
+export interface CameraPose {
+  /** Elevation offset in degrees (positive = look down from above) */
+  elevationDeg: number;
+  /** Additive radius bias (positive = farther from target) */
+  radiusBias: number;
+  /** Horizontal look-target bias */
+  lookBiasX: number;
+  /** Vertical look-target bias */
+  lookBiasY: number;
+}
+
+export interface CameraAnchor {
+  /** Orbit azimuth at this anchor, in degrees */
+  azimuthDeg: number;
+  /** Camera pose at this anchor */
+  pose: CameraPose;
+}
+
+// ── Output type ─────────────────────────────────────────────────
 
 export interface ScrollOrbitOffsets {
   /** Azimuth in radians */
   azimuth: number;
-  /** Vertical offset */
+  /** Vertical height offset (sine arc) */
   height: number;
+  /** Interpolated elevation in degrees */
+  elevationDeg: number;
+  /** Interpolated radius bias */
+  radiusBias: number;
+  /** Interpolated horizontal look bias */
+  lookBiasX: number;
+  /** Interpolated vertical look bias */
+  lookBiasY: number;
 }
 
+// ── Config ──────────────────────────────────────────────────────
+
 export interface ScrollBridgeConfig {
-  /**
-   * Anchor angles in degrees, evenly spaced across scroll progress.
-   * Default: [0, 90, 180, 270, 315]
-   *
-   * progress 0 → first anchor, progress 1 → last anchor.
-   * Segments between anchors are equal-length in scroll space.
-   */
-  anchorsDeg?: number[];
+  /** Anchor definitions. Default: 5 anchors with neutral poses. */
+  anchors?: CameraAnchor[];
   /** Maximum height shift (sine arc). Default 0.2. */
   heightAmplitude?: number;
 }
@@ -38,6 +59,65 @@ export interface ScrollBridgeConfig {
 // ── Helpers ─────────────────────────────────────────────────────
 
 const DEG2RAD = THREE.MathUtils.DEG2RAD;
+
+/** Neutral pose — all zeros. */
+const NEUTRAL_POSE: CameraPose = {
+  elevationDeg: 0,
+  radiusBias: 0,
+  lookBiasX: 0,
+  lookBiasY: 0,
+};
+
+/** Default anchor set with neutral poses. */
+const DEFAULT_ANCHORS: CameraAnchor[] = [
+  { azimuthDeg: 0,   pose: { ...NEUTRAL_POSE } },
+  { azimuthDeg: 90,  pose: { ...NEUTRAL_POSE } },
+  { azimuthDeg: 180, pose: { ...NEUTRAL_POSE } },
+  { azimuthDeg: 270, pose: { ...NEUTRAL_POSE } },
+  { azimuthDeg: 315, pose: { ...NEUTRAL_POSE } }, // tail zone
+];
+
+/**
+ * Linearly interpolate between two poses.
+ */
+function interpolatePose(a: CameraPose, b: CameraPose, t: number): CameraPose {
+  return {
+    elevationDeg: a.elevationDeg + (b.elevationDeg - a.elevationDeg) * t,
+    radiusBias:   a.radiusBias   + (b.radiusBias   - a.radiusBias)   * t,
+    lookBiasX:    a.lookBiasX    + (b.lookBiasX     - a.lookBiasX)    * t,
+    lookBiasY:    a.lookBiasY    + (b.lookBiasY     - a.lookBiasY)    * t,
+  };
+}
+
+/**
+ * Given normalized progress (0..1) and an anchor array, find the
+ * current segment and return interpolated azimuth (radians) + pose.
+ */
+function interpolateAnchors(
+  progress: number,
+  anchors: CameraAnchor[],
+): { azimuth: number; pose: CameraPose } {
+  if (anchors.length === 0) return { azimuth: 0, pose: { ...NEUTRAL_POSE } };
+  if (anchors.length === 1) {
+    return { azimuth: anchors[0].azimuthDeg * DEG2RAD, pose: { ...anchors[0].pose } };
+  }
+
+  const clamped = Math.max(0, Math.min(1, progress));
+  const segments = anchors.length - 1;
+  const scaled = clamped * segments;
+  const index = Math.min(Math.floor(scaled), segments - 1);
+  const t = scaled - index;
+
+  const a = anchors[index];
+  const b = anchors[index + 1];
+
+  const azimuthRad = (a.azimuthDeg + t * (b.azimuthDeg - a.azimuthDeg)) * DEG2RAD;
+  const pose = interpolatePose(a.pose, b.pose, t);
+
+  return { azimuth: azimuthRad, pose };
+}
+
+// ── Public API ──────────────────────────────────────────────────
 
 /**
  * Read current page scroll progress as a normalized 0..1 value.
@@ -51,47 +131,26 @@ export function getScrollProgress(): number {
 }
 
 /**
- * Interpolate through an anchor array based on normalized progress.
- *
- * Progress 0 → anchors[0], progress 1 → anchors[last].
- * Between anchors the value is linearly interpolated.
- */
-function interpolateAnchors(progress: number, anchors: number[]): number {
-  if (anchors.length === 0) return 0;
-  if (anchors.length === 1) return anchors[0];
-
-  const clamped = Math.max(0, Math.min(1, progress));
-  const segments = anchors.length - 1;
-  const scaled = clamped * segments;
-  const index = Math.min(Math.floor(scaled), segments - 1);
-  const t = scaled - index;
-
-  return anchors[index] + t * (anchors[index + 1] - anchors[index]);
-}
-
-// ── Main API ────────────────────────────────────────────────────
-
-const DEFAULT_ANCHORS_DEG = [0, 90, 180, 270, 315];
-
-/**
- * Convert normalized progress (0..1) into orbit offsets using the
- * anchor timeline.
- *
- * Azimuth is interpolated through the anchor array.
- * Height follows a sine arc peaking mid-scroll.
+ * Convert normalized progress (0..1) into orbit offsets + pose values.
  */
 export function mapScrollToOrbit(
   progress: number,
   config: ScrollBridgeConfig = {},
 ): ScrollOrbitOffsets {
   const {
-    anchorsDeg = DEFAULT_ANCHORS_DEG,
+    anchors = DEFAULT_ANCHORS,
     heightAmplitude = 0.2,
   } = config;
 
-  const anchorsRad = anchorsDeg.map((d) => d * DEG2RAD);
-  const azimuth = interpolateAnchors(progress, anchorsRad);
+  const { azimuth, pose } = interpolateAnchors(progress, anchors);
   const height = Math.sin(progress * Math.PI) * heightAmplitude;
 
-  return { azimuth, height };
+  return {
+    azimuth,
+    height,
+    elevationDeg: pose.elevationDeg,
+    radiusBias: pose.radiusBias,
+    lookBiasX: pose.lookBiasX,
+    lookBiasY: pose.lookBiasY,
+  };
 }
