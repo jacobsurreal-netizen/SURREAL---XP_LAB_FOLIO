@@ -170,8 +170,8 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
           dx: smoothedPointerRef.current.x * 0.1,
           dy: breathY + smoothedPointerRef.current.y * 0.05,
           dz: breathZ,
-          lookBiasX: smoothedPointerRef.current.x * 0.02,
-          lookBiasY: smoothedPointerRef.current.y * 0.01,
+          lookBiasX: smoothedPointerRef.current.x * 0.02 + scroll.lookBiasX * baseRadius,
+          lookBiasY: smoothedPointerRef.current.y * 0.01 + scroll.lookBiasY * baseRadius,
         });
       }
 

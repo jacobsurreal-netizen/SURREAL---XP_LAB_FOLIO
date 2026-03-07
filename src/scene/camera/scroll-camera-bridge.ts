@@ -71,15 +71,15 @@ const NEUTRAL_POSE: CameraPose = {
 /** Default anchor set with per-section camera poses. */
 const DEFAULT_ANCHORS: CameraAnchor[] = [
   // HERO — centered, neutral base composition
-  { azimuthDeg: 0,   pose: { elevationDeg: 0,   radiusBias: 0,     lookBiasX: 0, lookBiasY: 0 } },
+  { azimuthDeg: 0,   pose: { elevationDeg: 0,   radiusBias: 0,     lookBiasX: 0,     lookBiasY: 0 } },
   // ABOUT — cinematic upward lift, slightly closer
-  { azimuthDeg: 90,  pose: { elevationDeg: 28,  radiusBias: -0.06, lookBiasX: 0, lookBiasY: 0 } },
+  { azimuthDeg: 90,  pose: { elevationDeg: 28,  radiusBias: -0.06, lookBiasX: 0,     lookBiasY: 0 } },
   // PROJECTS — near horizontal, slightly low angle
-  { azimuthDeg: 180, pose: { elevationDeg: -4,  radiusBias: 0.02,  lookBiasX: 0, lookBiasY: 0 } },
-  // CTA — strong top-down angle
-  { azimuthDeg: 270, pose: { elevationDeg: 80,  radiusBias: 0.03,  lookBiasX: 0, lookBiasY: 0 } },
-  // Tail zone — hold elevated, slightly farther
-  { azimuthDeg: 315, pose: { elevationDeg: 78,  radiusBias: 0.05,  lookBiasX: 0, lookBiasY: 0 } },
+  { azimuthDeg: 180, pose: { elevationDeg: -4,  radiusBias: 0.02,  lookBiasX: 0,     lookBiasY: 0 } },
+  // CTA — strong top-down, off-center composition (object shifts left)
+  { azimuthDeg: 270, pose: { elevationDeg: 80,  radiusBias: 0.03,  lookBiasX: -0.25, lookBiasY: 0.05 } },
+  // Tail zone — hold elevated, continue off-center drift
+  { azimuthDeg: 315, pose: { elevationDeg: 78,  radiusBias: 0.05,  lookBiasX: -0.35, lookBiasY: 0.05 } },
 ];
 
 /**
