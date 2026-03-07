@@ -16,9 +16,9 @@ interface ThreeRuntimeAdapterProps {
 
 export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const animationId = useRef<number | null>(null)
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
-  const composerRef = useRef<EffectComposer | null>(null)
+  const animationId = useRef<number | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const composerRef = useRef<EffectComposer | null>(null);
   const progressRef = useRef(progress);
 
   // Sync progress prop to ref for use in animation loop
@@ -44,6 +44,7 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
 
     // Task 7b: Ambient Fog
     scene.fog = new THREE.FogExp2(0x000000, 0.045);
+
     const camera = new THREE.PerspectiveCamera(
       75,
       container.clientWidth / container.clientHeight,
@@ -52,22 +53,25 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
     );
     camera.position.set(0, 1.2, 5);
 
-    const renderer = new THREE.WebGLRenderer({ 
+    // Important:
+    // add camera to scene so camera-attached halo/fog can render as part of scene graph
+    scene.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true 
+      alpha: true
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    // renderer.setClearColor(0x000000); // Removed for transparency
 
-    // Enable shadows per 4d suggestion
+    // Enable shadows
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Task 7a: Bloom Postprocessing
+    // Bloom postprocessing
     const composer = new EffectComposer(renderer);
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
@@ -75,13 +79,13 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(container.clientWidth, container.clientHeight),
       0.25, // strength
-      0.1, // radius
-      0.25,  // threshold
+      0.1,  // radius
+      0.25  // threshold
     );
     composer.addPass(bloomPass);
     composerRef.current = composer;
 
-    // Basic light rig per 4d
+    // Basic light rig
     const ambientLight = new THREE.AmbientLight(0x6cfc86, 1.8);
     scene.add(ambientLight);
 
@@ -94,28 +98,31 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
     createHeroAsset({
       position: [0, 0, 0],
       scale: 1.5,
-      enableIdleRotation: true
-    }).then((asset) => {
-      scene.add(asset);
-      heroAsset = asset;
+      enableIdleRotation: true,
+      camera
+    })
+      .then((asset) => {
+        scene.add(asset);
+        heroAsset = asset;
 
-      // --- Camera Framing + Orbit Controller ---
-      const framing = frameObject(camera, asset, {
-        distanceFactor: 1.8,
-        offsetY: 0,
+        // Camera framing + orbit controller
+        const framing = frameObject(camera, asset, {
+          distanceFactor: 1.8,
+          offsetY: 0.25,
+        });
+
+        orbit = new OrbitController(framing);
+
+        // Preserve userData for any downstream consumers that read it
+        camera.userData.baseCenter = framing.center.clone();
+        camera.userData.maxDim = framing.maxDim;
+        camera.userData.orbitDistance = framing.distance;
+
+        console.log('[ThreeRuntimeAdapter] Orbit controller initialized from framing');
+      })
+      .catch((error) => {
+        console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
       });
-
-      orbit = new OrbitController(framing);
-
-      // Preserve userData for any downstream consumers that read it
-      camera.userData.baseCenter = framing.center.clone();
-      camera.userData.maxDim = framing.maxDim;
-      camera.userData.orbitDistance = framing.distance;
-
-      console.log('[ThreeRuntimeAdapter] Orbit controller initialized from framing');
-    }).catch((error) => {
-      console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
-    });
 
     const clock = new THREE.Clock();
 
@@ -131,7 +138,7 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
         }
       });
 
-      // --- Orbit Controller Update ---
+      // Orbit controller update
       if (orbit) {
         const time = clock.elapsedTime;
         const maxDim = (camera.userData.maxDim as number) ?? 1;
@@ -160,7 +167,6 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
         });
       }
 
-      // Use composer instead of renderer
       if (composerRef.current) {
         composerRef.current.render();
       } else {
@@ -176,26 +182,25 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
       if (!container || !rendererRef.current) return;
       const width = container.clientWidth;
       const height = container.clientHeight;
+
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
 
       rendererRef.current.setSize(width, height);
 
-      // Update composer size
       if (composerRef.current) {
         composerRef.current.setSize(width, height);
       }
     };
     window.addEventListener('resize', onResize);
 
-    // --- Task: Pointer Parallax Tracking ---
+    // Pointer parallax tracking
     const onMouseMove = (event: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const localX = (event.clientX - rect.left) / rect.width;
       const localY = (event.clientY - rect.top) / rect.height;
 
-      // Normalize to -1 to 1 and clamp to safe ranges
-      const targetX = (localX * 2 - 1);
+      const targetX = localX * 2 - 1;
       const targetY = -(localY * 2 - 1);
 
       pointerRef.current.x = Math.max(-0.45, Math.min(0.45, targetX));
@@ -216,6 +221,7 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
       window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
+
       if (rendererRef.current) {
         rendererRef.current.dispose();
         const canvas = rendererRef.current.domElement;
@@ -226,4 +232,3 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
 
   return <div ref={containerRef} style={{ width: '100%', height: '100vh' }} />;
 }
-

@@ -14,9 +14,11 @@ export interface ScrollOrbitOffsets {
 }
 
 export interface ScrollBridgeConfig {
-  /** Azimuth range in radians. Default π/2 (90°). Maps progress 0→1 to 0→range. */
-  azimuthRange?: number;
-  /** Maximum height shift. Default 0.15. Maps as sin curve for smooth start/end. */
+  /** Azimuth start angle in radians. Default -0.4. */
+  azimuthStart?: number;
+  /** Azimuth end angle in radians. Default 0.6. */
+  azimuthEnd?: number;
+  /** Maximum height shift. Default 0.2. Maps as sin curve for smooth start/end. */
   heightAmplitude?: number;
 }
 
@@ -35,21 +37,23 @@ export function getScrollProgress(): number {
 /**
  * Convert normalized progress (0..1) into subtle orbit offsets.
  *
- * Azimuth maps linearly across the configured range.
- * Height follows a sine curve so the shift is zero at start and end,
- * peaking gently in the middle — creating a cinematic arc feel.
+ * Azimuth sweeps from azimuthStart to azimuthEnd — an asymmetric range
+ * avoids a clinical centered start and creates a more editorial reveal.
+ *
+ * Height follows a sine curve peaking gently mid-scroll for a cinematic arc.
  */
 export function mapScrollToOrbit(
   progress: number,
   config: ScrollBridgeConfig = {},
 ): ScrollOrbitOffsets {
   const {
-    azimuthRange = Math.PI * 0.5,   // 90° total swing
-    heightAmplitude = 0.15,
+    azimuthStart = -0.4,
+    azimuthEnd = 0.6,
+    heightAmplitude = 0.2,
   } = config;
 
   return {
-    azimuth: progress * azimuthRange,
+    azimuth: azimuthStart + progress * (azimuthEnd - azimuthStart),
     height: Math.sin(progress * Math.PI) * heightAmplitude,
   };
 }

@@ -43,7 +43,7 @@ export function frameObject(
   // Derive distance from the camera's vertical FOV so the object
   // fills roughly 60-70% of the viewport height regardless of FOV.
   const vFov = THREE.MathUtils.degToRad(camera.fov);
-  const fovDistance = maxDim / (2 * Math.tan(vFov / 2));
+  const fovDistance = maxDim / (2 * Math.tan(vFov / 1.4));
   const distance = fovDistance * distanceFactor;
 
   camera.position.set(
