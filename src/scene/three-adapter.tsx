@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { createHeroAsset } from './objects/create-hero-asset';
 import { frameObject } from './camera/framing';
 import { OrbitController } from './camera/orbit-controller';
+import { mapScrollToOrbit } from './camera/scroll-camera-bridge';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -135,8 +136,10 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
         const time = clock.elapsedTime;
         const maxDim = (camera.userData.maxDim as number) ?? 1;
 
-        // Scroll-driven azimuth (0 → π/2 = 90° swing)
-        orbit.setAzimuth(progressRef.current * Math.PI * 0.5);
+        // Scroll bridge → orbit offsets
+        const scroll = mapScrollToOrbit(progressRef.current);
+        orbit.setAzimuth(scroll.azimuth);
+        orbit.setHeight(scroll.height);
 
         // Ultra-subtle breathing offsets
         const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
