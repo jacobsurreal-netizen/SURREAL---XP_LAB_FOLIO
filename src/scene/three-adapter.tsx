@@ -85,8 +85,30 @@ export function ThreeRuntimeAdapter() {
     }).then((asset) => {
       scene.add(asset);
       heroAsset = asset;
-      camera.lookAt(asset.position);
-      console.log('[ThreeRuntimeAdapter] Hero asset attached successfully');
+
+      // --- Task: Automatic Camera Framing Tuning ---
+      const box = new THREE.Box3().setFromObject(asset);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+
+      // Significantly closer framing (Target ~1.38x maxDim)
+      const distance = maxDim * 0.58;
+
+      // Position with vertical bias and lateral composition offset
+      camera.position.set(
+        center.x + maxDim * 0,  // Slight lateral bias
+        center.y + maxDim * -0.13,  // Gentle upward bias
+        center.z + distance
+      );
+      camera.lookAt(center);
+
+      // Store base transform for breathing effect
+      camera.userData.basePosition = camera.position.clone();
+      camera.userData.baseCenter = center.clone();
+      camera.userData.maxDim = maxDim;
+
+      console.log('[ThreeRuntimeAdapter] Hero asset framed with cinematic tuning');
     }).catch((error) => {
       console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
     });
@@ -104,6 +126,25 @@ export function ThreeRuntimeAdapter() {
           update(delta);
         }
       });
+
+      // --- Task: Ultra-subtle Camera Breathing ---
+      if (camera.userData.basePosition) {
+        const time = clock.elapsedTime;
+        const basePos = camera.userData.basePosition as THREE.Vector3;
+        const maxDim = camera.userData.maxDim as number;
+
+        // Slow organic drift
+        const breathY = Math.sin(time * 0.45) * (maxDim * 0.027);
+        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.02);
+
+        camera.position.y = basePos.y + breathY;
+        camera.position.z = basePos.z + breathZ;
+
+        // Maintain lookAt to avoid orientation drift
+        if (camera.userData.baseCenter) {
+          camera.lookAt(camera.userData.baseCenter as THREE.Vector3);
+        }
+      }
 
       /*
       if (torus) {
