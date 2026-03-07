@@ -3,11 +3,15 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createHeroAsset } from './objects/create-hero-asset';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 export function ThreeRuntimeAdapter() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationId = useRef<number | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const composerRef = useRef<EffectComposer | null>(null)
 
   // Minimal reference for future hero asset attachment
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -19,6 +23,9 @@ export function ThreeRuntimeAdapter() {
 
     // scene, camera, renderer setup
     const scene = new THREE.Scene();
+
+    // Task 7b: Ambient Fog
+    scene.fog = new THREE.FogExp2(0x000000, 0.045);
     const camera = new THREE.PerspectiveCamera(
       75,
       container.clientWidth / container.clientHeight,
@@ -39,11 +46,25 @@ export function ThreeRuntimeAdapter() {
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
+    // Task 7a: Bloom Postprocessing
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(container.clientWidth, container.clientHeight),
+      0.25, // strength
+      0.1, // radius
+      0.25,  // threshold
+    );
+    composer.addPass(bloomPass);
+    composerRef.current = composer;
+
     // Basic light rig per 4d
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x6cfc86, 1.8);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    const directionalLight = new THREE.DirectionalLight(0x6cfc86, 1.4);
     directionalLight.position.set(4, 6, 4);
     directionalLight.castShadow = true;
     scene.add(directionalLight);
@@ -90,7 +111,14 @@ export function ThreeRuntimeAdapter() {
         torus.rotation.y += 0.01;
       }
       */
-      renderer.render(scene, camera);
+
+      // Use composer instead of renderer
+      if (composerRef.current) {
+        composerRef.current.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+
       animationId.current = requestAnimationFrame(animate);
     };
     animate();
@@ -102,7 +130,13 @@ export function ThreeRuntimeAdapter() {
       const height = container.clientHeight;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+
       rendererRef.current.setSize(width, height);
+
+      // Update composer size
+      if (composerRef.current) {
+        composerRef.current.setSize(width, height);
+      }
     };
     window.addEventListener('resize', onResize);
 
