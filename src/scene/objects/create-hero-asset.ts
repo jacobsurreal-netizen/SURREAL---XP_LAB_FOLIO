@@ -9,6 +9,7 @@ export interface HeroAssetOptions {
   rotation?: [number, number, number];
   scale?: number;
   enableIdleRotation?: boolean;
+  camera?: THREE.Camera;
 }
 
 /**
@@ -46,7 +47,9 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
     position = [0, 0, 0],
     rotation = [0, 0, 0],
     scale = 1,
-    enableIdleRotation = false
+    camera,
+    enableIdleRotation = true
+
   } = options;
 
   try {
@@ -157,10 +160,17 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
     const haloGeometry = new THREE.PlaneGeometry(7, 5);
     const halo = new THREE.Mesh(haloGeometry, haloMaterial);
 
-    // Place slightly behind the artifact in local space
-    halo.position.z = -3.8;
     halo.name = "HeroBackgroundHalo";
-    container.add(halo);
+
+    if (camera) {
+      // attach halo to camera space so it stays fixed relative to viewer
+      halo.position.set(0, 0.15, -6.5);
+      camera.add(halo);
+    } else {
+      // fallback behavior if camera is not provided
+      halo.position.z = -3.8;
+      container.add(halo);
+    }
 
     // --- Task C & D: Update Hook ---
     if (enableIdleRotation) {
