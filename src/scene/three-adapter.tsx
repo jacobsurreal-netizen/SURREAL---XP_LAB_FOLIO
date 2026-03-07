@@ -142,11 +142,19 @@ export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) 
       if (orbit) {
         const time = clock.elapsedTime;
         const maxDim = (camera.userData.maxDim as number) ?? 1;
+        const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
 
-        // Scroll bridge → orbit offsets
+        // Scroll bridge → orbit offsets + pose
         const scroll = mapScrollToOrbit(progressRef.current);
         orbit.setAzimuth(scroll.azimuth);
-        orbit.setHeight(scroll.height);
+
+        // Elevation: convert degrees to height offset via tan(el) * radius
+        const elevationRad = THREE.MathUtils.degToRad(scroll.elevationDeg);
+        const elevationHeight = Math.tan(elevationRad) * baseRadius;
+        orbit.setHeight(scroll.height + elevationHeight);
+
+        // Radius: apply proportional bias from anchor pose
+        orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
 
         // Ultra-subtle breathing offsets
         const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
