@@ -6,6 +6,7 @@ import { createHeroAsset } from './objects/create-hero-asset';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { engine } from '../template-kit/engine';
 
 export function ThreeRuntimeAdapter() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -13,9 +14,10 @@ export function ThreeRuntimeAdapter() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const composerRef = useRef<EffectComposer | null>(null)
 
-  // Parallax tracking
+  // Parallax and Scroll Orbit tracking
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedPointerRef = useRef({ x: 0, y: 0 });
+  const smoothedOrbitRef = useRef(0);
 
   // Minimal reference for future hero asset attachment
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -107,12 +109,18 @@ export function ThreeRuntimeAdapter() {
       );
       camera.lookAt(center);
 
-      // Store base transform for breathing effect
-      camera.userData.basePosition = camera.position.clone();
-      camera.userData.baseCenter = center.clone();
+      // Store base transforms and orbital anchors
+      const relativePos = camera.position.clone().sub(center);
+      const radius = new THREE.Vector2(relativePos.x, relativePos.z).length();
+      const baseAngle = Math.atan2(relativePos.x, relativePos.z);
+      
+      camera.userData.orbitCenter = center.clone();
+      camera.userData.orbitRadius = radius;
+      camera.userData.baseAngle = baseAngle;
+      camera.userData.baseHeight = relativePos.y;
       camera.userData.maxDim = maxDim;
 
-      console.log('[ThreeRuntimeAdapter] Hero asset framed with cinematic tuning');
+      console.log('[ThreeRuntimeAdapter] Hero asset framed with cinematic tuning and orbital anchors');
     }).catch((error) => {
       console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
     });
@@ -131,38 +139,64 @@ export function ThreeRuntimeAdapter() {
         }
       });
 
-      // --- Task: Ultra-subtle Camera Breathing ---
-      if (camera.userData.basePosition) {
+      // --- Task: Ultra-subtle Camera Breathing & Scroll Orbit ---
+      if (camera.userData.orbitCenter) {
         const time = clock.elapsedTime;
-        const basePos = camera.userData.basePosition as THREE.Vector3;
+        const center = camera.userData.orbitCenter as THREE.Vector3;
+        const radius = camera.userData.orbitRadius as number;
+        const baseAngle = camera.userData.baseAngle as number;
+        const baseHeight = camera.userData.baseHeight as number;
         const maxDim = camera.userData.maxDim as number;
+        
+        // 1. Get progress from Page Engine and map to Cinematic Orbit
+        const scrollProgress = engine.getSnapshot().scrollProgress;
+        
+        // Mapping detents: 0.00 -> -0.18, 0.25 -> -0.06, 0.50 -> 0.10, 0.75 -> 0.24
+        // We'll interpolate smoothly across the range.
+        let targetOrbit = 0;
+        if (scrollProgress <= 0.25) {
+          const t = scrollProgress / 0.25;
+          targetOrbit = -0.18 + t * (-0.06 - (-0.18));
+        } else if (scrollProgress <= 0.50) {
+          const t = (scrollProgress - 0.25) / 0.25;
+          targetOrbit = -0.06 + t * (0.10 - (-0.06));
+        } else if (scrollProgress <= 0.75) {
+          const t = (scrollProgress - 0.50) / 0.25;
+          targetOrbit = 0.10 + t * (0.24 - 0.10);
+        } else {
+          // Beyond last detent (CTA)
+          const t = Math.min(1, (scrollProgress - 0.75) / 0.25);
+          targetOrbit = 0.24 + t * 0.12; // Subtle extention
+        }
 
-        // Slow organic drift
+        // Smoothly lerp orbit angle for heavy feel
+        smoothedOrbitRef.current += (targetOrbit - smoothedOrbitRef.current) * 0.05;
+
+        // 2. Compute orbital base position
+        const currentAngle = baseAngle + smoothedOrbitRef.current;
+        const orbX = center.x + Math.sin(currentAngle) * radius;
+        const orbZ = center.z + Math.cos(currentAngle) * radius;
+        const orbY = center.y + baseHeight;
+
+        // 3. Layer breathing
         const breathY = Math.sin(time * 0.45) * (maxDim * 0.027);
-        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.02);
-
-        camera.position.y = basePos.y + breathY;
-        camera.position.z = basePos.z + breathZ;
-
-        // --- Layer: Pointer Parallax ---
-        // Lerp smoothed values toward target with soft smoothing
-        const lerpFactor = 0.065;
+        const breathZ_offset = Math.cos(time * 0.38) * (maxDim * 0.02);
+        
+        // 4. Layer Pointer Parallax
+        const lerpFactor = 0.035;
         smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
         smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
 
-        // Compose final position from base + breathing + parallax
-        camera.position.x = basePos.x + smoothedPointerRef.current.x * 0.06;
-        camera.position.y = basePos.y + breathY + smoothedPointerRef.current.y * 0.025;
-        camera.position.z = basePos.z + breathZ;
-
-        // Rebuild lookAt target from base center + subtle parallax bias
-        if (camera.userData.baseCenter) {
-          const baseCenter = camera.userData.baseCenter as THREE.Vector3;
-          const target = baseCenter.clone();
-          target.x += smoothedPointerRef.current.x * 0.02;
-          target.y += smoothedPointerRef.current.y * 0.01;
-          camera.lookAt(target);
-        }
+        // Final Composed Position
+        camera.position.x = orbX + smoothedPointerRef.current.x * 0.06;
+        camera.position.y = orbY + breathY + smoothedPointerRef.current.y * 0.03;
+        camera.position.z = orbZ + breathZ_offset;
+        
+        // Maintain lookAt to avoid orientation drift + subtle parallax bias
+        const target = center.clone();
+        target.x += smoothedPointerRef.current.x * 0.02;
+        target.y += smoothedPointerRef.current.y * 0.01;
+        camera.lookAt(target);
       }
 
       /*
