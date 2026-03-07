@@ -7,11 +7,21 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-export function ThreeRuntimeAdapter() {
+interface ThreeRuntimeAdapterProps {
+  progress?: number;
+}
+
+export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationId = useRef<number | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const composerRef = useRef<EffectComposer | null>(null)
+  const progressRef = useRef(progress);
+
+  // Sync progress prop to ref for use in animation loop
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
 
   // Parallax tracking
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -38,10 +48,13 @@ export function ThreeRuntimeAdapter() {
     );
     camera.position.set(0, 1.2, 5);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      alpha: true 
+    });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x000000);
+    // renderer.setClearColor(0x000000); // Removed for transparency
 
     // Enable shadows per 4d suggestion
     renderer.shadowMap.enabled = true;
@@ -73,15 +86,7 @@ export function ThreeRuntimeAdapter() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
-    // torus - COMMENTED OUT AS PER TASK 4c
-    /*
-    const geometry = new THREE.TorusGeometry(1, 0.35, 16, 100);
-    const material = new THREE.MeshNormalMaterial();
-    const torus = new THREE.Mesh(geometry, material);
-    scene.add(torus);
-    */
-
-    // Load and attach hero asset per 4e
+    // Load and attach hero asset
     createHeroAsset({
       position: [0, 0, 0],
       scale: 1.5,
@@ -101,16 +106,17 @@ export function ThreeRuntimeAdapter() {
 
       // Position with vertical bias and lateral composition offset
       camera.position.set(
-        center.x + maxDim * 0,  // Slight lateral bias
-        center.y + maxDim * -0.13,  // Gentle upward bias
+        center.x, 
+        center.y, 
         center.z + distance
       );
       camera.lookAt(center);
 
-      // Store base transform for breathing effect
+      // Store base transform for breathing and orbit effects
       camera.userData.basePosition = camera.position.clone();
       camera.userData.baseCenter = center.clone();
       camera.userData.maxDim = maxDim;
+      camera.userData.orbitDistance = distance;
 
       console.log('[ThreeRuntimeAdapter] Hero asset framed with cinematic tuning');
     }).catch((error) => {
@@ -123,7 +129,7 @@ export function ThreeRuntimeAdapter() {
     const animate = () => {
       const delta = clock.getDelta();
 
-      // Traverse scene for update hooks per 4f
+      // Traverse scene for update hooks
       scene.traverse((object) => {
         const update = (object.userData as { update?: (delta: number) => void }).update;
         if (typeof update === 'function') {
@@ -131,46 +137,39 @@ export function ThreeRuntimeAdapter() {
         }
       });
 
-      // --- Task: Ultra-subtle Camera Breathing ---
       if (camera.userData.basePosition) {
         const time = clock.elapsedTime;
-        const basePos = camera.userData.basePosition as THREE.Vector3;
+        const baseCenter = camera.userData.baseCenter as THREE.Vector3;
         const maxDim = camera.userData.maxDim as number;
+        const orbitDistance = camera.userData.orbitDistance as number;
 
-        // Slow organic drift
-        const breathY = Math.sin(time * 0.45) * (maxDim * 0.027);
-        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.02);
-
-        camera.position.y = basePos.y + breathY;
-        camera.position.z = basePos.z + breathZ;
+        // --- Task: Scroll-driven Camera Orbit ---
+        // Progress (0 to 1) rotates the camera around the Y axis
+        const orbitAngle = progressRef.current * Math.PI * 0.5; // 90 degree orbit swing
+        
+        // --- Task: Ultra-subtle Camera Breathing ---
+        const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
+        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
 
         // --- Layer: Pointer Parallax ---
-        // Lerp smoothed values toward target with soft smoothing
         const lerpFactor = 0.065;
         smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
         smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
 
-        // Compose final position from base + breathing + parallax
-        camera.position.x = basePos.x + smoothedPointerRef.current.x * 0.06;
-        camera.position.y = basePos.y + breathY + smoothedPointerRef.current.y * 0.025;
-        camera.position.z = basePos.z + breathZ;
+        // Compose spherical coordinates for orbit
+        const radius = orbitDistance + breathZ;
+        const targetPosX = baseCenter.x + radius * Math.sin(orbitAngle) + smoothedPointerRef.current.x * 0.1;
+        const targetPosY = baseCenter.y + breathY + smoothedPointerRef.current.y * 0.05;
+        const targetPosZ = baseCenter.z + radius * Math.cos(orbitAngle);
 
+        camera.position.set(targetPosX, targetPosY, targetPosZ);
+        
         // Rebuild lookAt target from base center + subtle parallax bias
-        if (camera.userData.baseCenter) {
-          const baseCenter = camera.userData.baseCenter as THREE.Vector3;
-          const target = baseCenter.clone();
-          target.x += smoothedPointerRef.current.x * 0.02;
-          target.y += smoothedPointerRef.current.y * 0.01;
-          camera.lookAt(target);
-        }
+        const target = baseCenter.clone();
+        target.x += smoothedPointerRef.current.x * 0.02;
+        target.y += smoothedPointerRef.current.y * 0.01;
+        camera.lookAt(target);
       }
-
-      /*
-      if (torus) {
-        torus.rotation.x += 0.01;
-        torus.rotation.y += 0.01;
-      }
-      */
 
       // Use composer instead of renderer
       if (composerRef.current) {
@@ -215,7 +214,6 @@ export function ThreeRuntimeAdapter() {
     };
 
     const onMouseLeave = () => {
-      // Smoothly return to center
       pointerRef.current.x = 0;
       pointerRef.current.y = 0;
     };

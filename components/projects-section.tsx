@@ -135,6 +135,8 @@ export function ProjectsSection() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
           <div>
+            {/* DISCONNECTED: Selected Projects Header */}
+            {/*
             <h2
   className="font-heading text-4xl md:text-5xl font-bold text-[#cbebe5] mb-4 glitch-text glitch-shiver"
   data-text="Selected Projects"
@@ -148,10 +150,12 @@ export function ProjectsSection() {
   >
   A curated selection of web design, AR, and brand systems.
 </p>
+            */}
 
           </div>
 
-          {/* Navigation Arrows */}
+          {/* DISCONNECTED: Navigation Arrows */}
+          {/*
           <div className="flex gap-3 mt-6 md:mt-0">
             <Button
               variant="outline"
@@ -172,9 +176,11 @@ export function ProjectsSection() {
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
+          */}
         </div>
 
-        {/* Projects Carousel */}
+        {/* DISCONNECTED: Projects Carousel */}
+        {/*
         <div
           ref={carouselRef}
           onScroll={checkScrollability}
@@ -194,8 +200,10 @@ export function ProjectsSection() {
             </div>
           ))}
         </div>
+        */}
 
-        {/* Scroll indicator dots */}
+        {/* DISCONNECTED: Scroll indicator dots */}
+        {/*
         <div className="flex justify-center gap-2 mt-8">
           {projects.map((project, index) => (
             <div
@@ -206,6 +214,7 @@ export function ProjectsSection() {
             />
           ))}
         </div>
+        */}
       </div>
     </section>
   )

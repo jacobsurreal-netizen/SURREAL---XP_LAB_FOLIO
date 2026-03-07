@@ -52,9 +52,14 @@ export function AboutSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
           {/* Left Column - Who I Am */}
           <div className="lg:sticky lg:top-32">
+            {/* DISCONNECTED: About Jacob glitch title */}
+            {/*
             <h2 className="font-heading text-4xl md:text-5xl font-bold text-[#3b4a52] glitch-text mb-10">
               About Jacob
             </h2>
+            */}
+            {/* DISCONNECTED: About paragraph content */}
+            {/*
             <p className="text-lg text-[#cbebe5] glitch-shiver leading-relaxed mb-6">
               I&apos;m Jacob, a graphic designer and creative technologist from Pilsen, focused on building immersive, brand-driven digital experiences on the web and beyond.
             </p>
@@ -64,17 +69,21 @@ export function AboutSection() {
             <p className="text-lg text-[#3b4a52] leading-relaxed">
               Whether it&apos;s refining a visual identity, designing a high-impact web experience, or launching a 3D/AR activation — I bring ideas to life with precision and creativity.
             </p>
+            */}
           </div>
 
           {/* Right Column - Process Orbit */}
           <div className="lg:pl-8 flex justify-end">
             <div className="w-full max-w-[420px] lg:-mr-10">
+              {/* DISCONNECTED: My Process and ProcessOrbit */}
+              {/*
               <h3 className="font-heading text-2xl font-semibold text-[#040b0a] mb-8">
                 My Process
               </h3>
               <div className="hidden lg:block">
                 <ProcessOrbit externalActiveIndex={activeStep} />
               </div>
+              */}
             </div>
           </div>
         </div>

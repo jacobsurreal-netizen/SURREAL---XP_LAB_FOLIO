@@ -19,7 +19,6 @@ export function WorldLayer({ progress }: WorldLayerProps) {
   return (
     <div
       className="absolute inset-0 transition-colors duration-700"
-      style={{ background: "var(--world-bg)" }}
     >
       {/* Radial glow center -- driven by tokens */}
       <div
