@@ -1,17 +1,21 @@
 'use client';
 
 import React from 'react';
-
-/*
-  TEMPORARY SMOKE TEST MODE
-
-  HUD rendering is disabled to isolate the Three.js runtime.
-  This keeps the component in the tree but bypasses all HUD logic.
-
-  To restore HUD later:
-  revert this file or re-enable the original implementation.
-*/
+import { HudParallax, HUD_MODES } from './index';
+import { useSpectrumMode } from "@/hooks/use-spectrum-mode";
 
 export function HudSkeleton({ children }: { children?: React.ReactNode }) {
-  return <>{children}</>;
+  const { mode } = useSpectrumMode();
+
+  const hudMode = mode === 'IR' ? HUD_MODES.IR : HUD_MODES.NORMAL;
+
+  return (
+    <>
+      {children}
+
+      <div className="pointer-events-none fixed inset-0 z-30">
+        <HudParallax mode={hudMode} />
+      </div>
+    </>
+  );
 }
