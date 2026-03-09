@@ -9,6 +9,7 @@ import { useHudInactivity } from "@/hooks/use-hud-inactivity"
 import { useLanguage } from "@/hooks/use-language"
 import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
+import { CameraDebugHUD } from "@/src/scene/camera/camera-debug-hud"
 
 interface SystemShellProps {
   children: React.ReactNode
@@ -47,6 +48,7 @@ export function SystemShell({ children }: SystemShellProps) {
               isSnapped,
             }}
           />
+          <CameraDebugHUD />
         </div>
 
         {/* Layer 20: IR overlay tint */}

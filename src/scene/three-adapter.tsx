@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { createHeroAsset } from './objects/create-hero-asset';
 import { frameObject } from './camera/framing';
 import { OrbitController } from './camera/orbit-controller';
-import { mapScrollToOrbit } from './camera/scroll-camera-bridge';
+import { mapSnapshotToOrbit } from './camera/scroll-camera-bridge';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -14,7 +14,6 @@ interface ThreeRuntimeAdapterProps {
   progress?: number
   snapshot?: ThreeRuntimeSnapshot
 }
-
 
 type ThreeRuntimeSnapshot = {
   scrollProgress: number
@@ -27,18 +26,22 @@ export function ThreeRuntimeAdapter({
   progress = 0,
   snapshot,
 }: ThreeRuntimeAdapterProps) {
-
-  const resolvedProgress = snapshot?.scrollProgress ?? progress ?? 0
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationId = useRef<number | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const composerRef = useRef<EffectComposer | null>(null);
   const progressRef = useRef(progress);
+  const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
 
   // Sync progress prop to ref for use in animation loop
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
+
+  // Sync snapshot prop to ref for use in animation loop
+  useEffect(() => {
+    snapshotRef.current = snapshot;
+  }, [snapshot]);
 
   // Parallax tracking
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -158,8 +161,8 @@ export function ThreeRuntimeAdapter({
         const maxDim = (camera.userData.maxDim as number) ?? 1;
         const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
 
-        // Scroll bridge → orbit offsets + pose
-        const scroll = mapScrollToOrbit(progressRef.current);
+        // Snapshot-aware bridge → orbit offsets + pose
+        const scroll = mapSnapshotToOrbit(snapshotRef.current, progressRef.current);
         orbit.setAzimuth(scroll.azimuth);
 
         // Elevation: convert degrees to height offset via tan(el) * radius
