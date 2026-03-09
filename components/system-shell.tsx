@@ -15,7 +15,7 @@ interface SystemShellProps {
 }
 
 export function SystemShell({ children }: SystemShellProps) {
-  const { progress, sectorIndex, sectorName, goToSector } = useOrbitSector()
+  const { progress, sectorIndex, sectorName, isSnapped, goToSector } = useOrbitSector()
   const { mode, toggle: toggleSpectrum } = useSpectrumMode()
   const hudOpacity = useHudInactivity(sectorIndex)
   const { lang, cycle: cycleLang, t } = useLanguage()
@@ -38,7 +38,15 @@ export function SystemShell({ children }: SystemShellProps) {
 
         {/* Layer 10: Pinned Three Stage (Artifact) */}
         <div className="absolute inset-0 z-10 pointer-events-none">
-          <ThreeRuntimeAdapter progress={progress} />
+          <ThreeRuntimeAdapter
+            progress={progress}
+            snapshot={{
+              scrollProgress: progress,
+              sectorIndex,
+              sectorName,
+              isSnapped,
+            }}
+          />
         </div>
 
         {/* Layer 20: IR overlay tint */}

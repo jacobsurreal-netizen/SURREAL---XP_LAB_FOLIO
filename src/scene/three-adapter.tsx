@@ -11,10 +11,24 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 interface ThreeRuntimeAdapterProps {
-  progress?: number;
+  progress?: number
+  snapshot?: ThreeRuntimeSnapshot
 }
 
-export function ThreeRuntimeAdapter({ progress = 0 }: ThreeRuntimeAdapterProps) {
+
+type ThreeRuntimeSnapshot = {
+  scrollProgress: number
+  sectorIndex: number
+  sectorName: string
+  isSnapped?: boolean
+}
+
+export function ThreeRuntimeAdapter({
+  progress = 0,
+  snapshot,
+}: ThreeRuntimeAdapterProps) {
+
+  const resolvedProgress = snapshot?.scrollProgress ?? progress ?? 0
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationId = useRef<number | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
