@@ -130,6 +130,13 @@ export function ThreeRuntimeAdapter({
 
         orbit = new OrbitController(framing);
 
+        // Camera easing defaults
+        orbit.setDamping({
+          azimuth: 7.5,
+          height: 7.5,
+          radius: 7.5,
+        });
+
         // Preserve userData for any downstream consumers that read it
         camera.userData.baseCenter = framing.center.clone();
         camera.userData.maxDim = framing.maxDim;
@@ -172,6 +179,9 @@ export function ThreeRuntimeAdapter({
 
         // Radius: apply proportional bias from anchor pose
         orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
+
+        // Smooth orbit motion toward current targets
+        orbit.tick(delta);
 
         // Ultra-subtle breathing offsets
         const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);

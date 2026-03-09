@@ -7,9 +7,16 @@
  *
  * Stage C — Step 2:
  * Extended with snapshot-aware bridge mapping.
+ *
+ * Stage C — Step 3:
+ * Extended with sector-aware camera poses.
  */
 
 import * as THREE from "three"
+import {
+  SECTOR_CAMERA_POSES,
+  getSectorCameraPose,
+} from "./sector-camera-poses"
 
 // ── Pose types ──────────────────────────────────────────────────
 
@@ -78,10 +85,20 @@ type CameraDebugListener = (state: CameraDebugState) => void
 // ── Config ──────────────────────────────────────────────────────
 
 export interface ScrollBridgeConfig {
-  /** Anchor definitions. Default: 5 anchors with neutral poses. */
+  /** Anchor definitions. Default: derived from sector camera poses. */
   anchors?: CameraAnchor[]
   /** Maximum height shift (sine arc). Default 0.2. */
   heightAmplitude?: number
+  /**
+   * Sector influence while freely scrolling.
+   * Kept intentionally low so timeline remains the main driver.
+   */
+  sectorInfluence?: number
+  /**
+   * Sector influence when engine reports snapped state.
+   * Still soft — never full override.
+   */
+  snappedSectorInfluence?: number
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -97,39 +114,11 @@ const NEUTRAL_POSE: CameraPose = {
   lookBiasY: 0,
 }
 
-/** Default anchor set with per-section camera poses. */
-const DEFAULT_ANCHORS: CameraAnchor[] = [
-  {
-    azimuthDeg: 0,
-    pose: { elevationDeg: 0, radiusBias: 0, lookBiasX: 0, lookBiasY: 0 },
-  },
-  {
-    azimuthDeg: 90,
-    pose: { elevationDeg: 28, radiusBias: -0.06, lookBiasX: 0, lookBiasY: 0 },
-  },
-  {
-    azimuthDeg: 180,
-    pose: { elevationDeg: -4, radiusBias: 0.02, lookBiasX: 0, lookBiasY: 0 },
-  },
-  {
-    azimuthDeg: 270,
-    pose: {
-      elevationDeg: 80,
-      radiusBias: 0.03,
-      lookBiasX: -0.25,
-      lookBiasY: 0.05,
-    },
-  },
-  {
-    azimuthDeg: 315,
-    pose: {
-      elevationDeg: 78,
-      radiusBias: 0.05,
-      lookBiasX: -0.35,
-      lookBiasY: 0.05,
-    },
-  },
-]
+/** Default anchors derived from authoritative sector poses. */
+const DEFAULT_ANCHORS: CameraAnchor[] = SECTOR_CAMERA_POSES.map((item) => ({
+  azimuthDeg: item.azimuthDeg,
+  pose: { ...item.pose },
+}))
 
 // ── Debug bus ───────────────────────────────────────────────────
 
@@ -224,6 +213,63 @@ function interpolateAnchors(
   return { azimuth: azimuthRad, pose }
 }
 
+function lerpAngleRad(a: number, b: number, t: number): number {
+  const delta = Math.atan2(Math.sin(b - a), Math.cos(b - a))
+  return a + delta * t
+}
+
+function blendOffsets(
+  base: ScrollOrbitOffsets,
+  sector: ScrollOrbitOffsets,
+  t: number
+): ScrollOrbitOffsets {
+  if (t <= 0) return base
+
+  const softT = Math.max(0, Math.min(1, t))
+  const radiusT = softT * 0.35
+
+  return {
+    // Keep azimuth fully driven by scroll timeline.
+    // This avoids the visible “15° kick” when sector snap changes.
+    azimuth: base.azimuth,
+
+    // Preserve vertical arc from scroll timeline.
+    height: base.height,
+
+    // Sector can gently influence elevation.
+    elevationDeg:
+      base.elevationDeg + (sector.elevationDeg - base.elevationDeg) * softT,
+
+    // Radius influence stays subtle.
+    radiusBias:
+      base.radiusBias + (sector.radiusBias - base.radiusBias) * radiusT,
+
+    // Look bias is safe and useful for composition.
+    lookBiasX:
+      base.lookBiasX + (sector.lookBiasX - base.lookBiasX) * softT,
+    lookBiasY:
+      base.lookBiasY + (sector.lookBiasY - base.lookBiasY) * softT,
+  }
+}
+
+function createSectorOffsets(
+  resolvedProgress: number,
+  snapshot?: RuntimeSnapshot,
+  heightAmplitude = 0.2
+): ScrollOrbitOffsets | null {
+  const sectorPose = getSectorCameraPose(snapshot?.sectorIndex)
+  if (!sectorPose) return null
+
+  return {
+    azimuth: sectorPose.azimuthDeg * DEG2RAD,
+    height: Math.sin(resolvedProgress * Math.PI) * heightAmplitude,
+    elevationDeg: sectorPose.pose.elevationDeg,
+    radiusBias: sectorPose.pose.radiusBias,
+    lookBiasX: sectorPose.pose.lookBiasX,
+    lookBiasY: sectorPose.pose.lookBiasY,
+  }
+}
+
 function createCameraDebugState(
   offsets: ScrollOrbitOffsets,
   resolvedProgress: number,
@@ -282,9 +328,38 @@ export function mapSnapshotToOrbit(
   config: ScrollBridgeConfig = {}
 ): ScrollOrbitOffsets {
   const resolvedProgress = snapshot?.scrollProgress ?? progress ?? 0
-  const offsets = mapScrollToOrbit(resolvedProgress, config)
 
-  const debugState = createCameraDebugState(offsets, resolvedProgress, snapshot)
+  const {
+    anchors = DEFAULT_ANCHORS,
+    heightAmplitude = 0.08,
+    sectorInfluence = 0.015,
+    snappedSectorInfluence = 0.03,
+  } = config
+
+  const baseOffsets = mapScrollToOrbit(resolvedProgress, {
+    anchors,
+    heightAmplitude,
+  })
+
+  const sectorOffsets = createSectorOffsets(
+    resolvedProgress,
+    snapshot,
+    heightAmplitude
+  )
+
+  const sectorBlend = snapshot?.isSnapped
+  ? snappedSectorInfluence
+  : sectorInfluence
+
+const blendedOffsets = sectorOffsets
+  ? blendOffsets(baseOffsets, sectorOffsets, sectorBlend)
+  : baseOffsets
+
+  const debugState = createCameraDebugState(
+    blendedOffsets,
+    resolvedProgress,
+    snapshot
+  )
   emitDebugState(debugState)
 
   if (snapshot && process.env.NODE_ENV === "development") {
@@ -294,10 +369,12 @@ export function mapSnapshotToOrbit(
       snapped: snapshot.isSnapped,
       progress: resolvedProgress,
       azimuthDeg: debugState.azimuthDeg,
-      elevationDeg: offsets.elevationDeg,
-      radiusBias: offsets.radiusBias,
+      elevationDeg: blendedOffsets.elevationDeg,
+      radiusBias: blendedOffsets.radiusBias,
+      lookBiasX: blendedOffsets.lookBiasX,
+      lookBiasY: blendedOffsets.lookBiasY,
     })
   }
 
-  return offsets
+  return blendedOffsets
 }

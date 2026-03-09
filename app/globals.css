@@ -189,10 +189,18 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
   body {
-  background: #040b0a;
-  color: #cbebe5;
-}
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body {
+    background: #040b0a;
+    color: #cbebe5;
+  }
 }
 
 @layer utilities {

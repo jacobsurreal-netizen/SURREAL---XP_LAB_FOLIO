@@ -17,20 +17,20 @@ export function AboutSection() {
 
       const offset = 200
       const progressRaw =
-       (windowHeight - (rect.top + offset)) /
-       (rect.height + windowHeight * 0.5)
+        (windowHeight - (rect.top + offset)) /
+        (rect.height + windowHeight * 0.5)
       const progress = Math.min(1, Math.max(0, progressRaw))
 
       let index = 0
 
       if (progress < 0.25) {
-        index = 0 // STEP 01
+        index = 0
       } else if (progress < 0.4) {
-        index = 1 // STEP 02
+        index = 1
       } else if (progress < 0.65) {
-        index = 2 // STEP 03
+        index = 2
       } else {
-        index = 3 // STEP 04
+        index = 3
       }
 
       setActiveStep(index)
@@ -46,10 +46,10 @@ export function AboutSection() {
     <section
       ref={sectionRef}
       id="about"
-      className="relative py-32 min-h-screen overflow-hidden"
+      className="relative min-h-[150svh] py-40 overflow-hidden"
     >
       <div className="max-w-[1320px] mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           {/* Left Column - Who I Am */}
           <div className="lg:sticky lg:top-32">
             {/* DISCONNECTED: About Jacob glitch title */}
@@ -73,7 +73,7 @@ export function AboutSection() {
           </div>
 
           {/* Right Column - Process Orbit */}
-          <div className="lg:pl-8 flex justify-end">
+          <div className="lg:pl-12 flex justify-end">
             <div className="w-full max-w-[420px] lg:-mr-10">
               {/* DISCONNECTED: My Process and ProcessOrbit */}
               {/*

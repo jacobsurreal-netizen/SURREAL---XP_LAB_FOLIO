@@ -2,39 +2,56 @@ import * as THREE from 'three';
 import type { FramingResult } from './framing';
 
 /**
- * Minimal orbit controller skeleton.
+ * Minimal orbit controller with eased target-state motion.
  *
  * Stores orbit state (target, radius, azimuth, height) and computes
  * camera position each frame. Designed to be initialized from the
- * result of `frameObject()` and extended later with scroll hooks,
- * magnetic snap, and sector transitions.
+ * result of `frameObject()` and extended with smoothing / sector logic.
  */
 export class OrbitController {
   /** Point the camera orbits around */
   target = new THREE.Vector3();
 
-  /** Distance from target */
+  /** Current distance from target */
   radius: number;
 
-  /** Horizontal angle in radians (0 = positive Z) */
+  /** Current horizontal angle in radians (0 = positive Z) */
   azimuth = 0;
 
-  /** Vertical offset above target */
+  /** Current vertical offset above target */
   height = 0;
+
+  /** Target distance from target */
+  targetRadius: number;
+
+  /** Target horizontal angle in radians */
+  targetAzimuth = 0;
+
+  /** Target vertical offset above target */
+  targetHeight = 0;
+
+  /**
+   * Damping strengths.
+   * Higher = faster catch-up, lower = softer cinematic drift.
+   */
+  azimuthDamping = 7.5;
+  heightDamping = 7.5;
+  radiusDamping = 7.5;
 
   constructor(framing: FramingResult) {
     this.target.copy(framing.center);
     this.radius = framing.distance;
+    this.targetRadius = framing.distance;
   }
 
-  // ── Setters for future consumers ──────────────────────────────
+  // ── Setters for consumers ─────────────────────────────────────
 
   setAzimuth(radians: number) {
-    this.azimuth = radians;
+    this.targetAzimuth = radians;
   }
 
   setHeight(y: number) {
-    this.height = y;
+    this.targetHeight = y;
   }
 
   setTarget(v: THREE.Vector3) {
@@ -42,10 +59,31 @@ export class OrbitController {
   }
 
   setRadius(r: number) {
-    this.radius = r;
+    this.targetRadius = r;
   }
 
-  // ── Per-frame update ──────────────────────────────────────────
+  setDamping(config: {
+    azimuth?: number;
+    height?: number;
+    radius?: number;
+  }) {
+    if (typeof config.azimuth === 'number') this.azimuthDamping = config.azimuth;
+    if (typeof config.height === 'number') this.heightDamping = config.height;
+    if (typeof config.radius === 'number') this.radiusDamping = config.radius;
+  }
+
+  // ── Per-frame easing ──────────────────────────────────────────
+
+  /**
+   * Smoothly move current orbit state toward target orbit state.
+   */
+  tick(delta: number) {
+    this.azimuth = dampAngle(this.azimuth, this.targetAzimuth, this.azimuthDamping, delta);
+    this.height = THREE.MathUtils.damp(this.height, this.targetHeight, this.heightDamping, delta);
+    this.radius = THREE.MathUtils.damp(this.radius, this.targetRadius, this.radiusDamping, delta);
+  }
+
+  // ── Per-frame render update ───────────────────────────────────
 
   /**
    * Compute camera position from orbit state and apply lookAt.
@@ -72,4 +110,10 @@ export class OrbitController {
     lookTarget.y += lookBiasY;
     camera.lookAt(lookTarget);
   }
+}
+
+function dampAngle(current: number, target: number, lambda: number, delta: number) {
+  const wrappedDelta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+  const nextDelta = THREE.MathUtils.damp(0, wrappedDelta, lambda, delta);
+  return current + nextDelta;
 }

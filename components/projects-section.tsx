@@ -46,10 +46,8 @@ interface ProjectCardProps {
 function ProjectCard({ title, description, tags }: ProjectCardProps) {
   return (
     <article className="group flex-shrink-0 w-[320px] md:w-[380px] rounded-2xl overflow-hidden bg-[#081216] border border-[#40ebff]/10 hover:border-[#40ebff]/30 transition-all duration-300">
-      {/* Thumbnail Placeholder */}
       <div className="aspect-video relative overflow-hidden bg-[#0a1a1f]">
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Triangle motif */}
           <svg
             className="w-16 h-16 group-hover:scale-110 transition-transform duration-500"
             viewBox="0 0 100 100"
@@ -67,7 +65,6 @@ function ProjectCard({ title, description, tags }: ProjectCardProps) {
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-5">
         <h3 className="font-heading text-lg font-semibold text-[#cbebe5] mb-2 group-hover:text-[#40ebff] transition-colors">
           {title}
@@ -76,7 +73,6 @@ function ProjectCard({ title, description, tags }: ProjectCardProps) {
           {description}
         </p>
 
-        {/* Tags */}
         <div className="flex flex-wrap gap-2">
           {tags.map((tag, index) => (
             <span
@@ -119,11 +115,9 @@ export function ProjectsSection() {
 
   return (
     <section
-  id="projects"
-  className="relative py-32 overflow-hidden"
->
-
-      {/* Subtle cyan glow */}
+      id="projects"
+      className="relative min-h-[150svh] py-40 overflow-hidden"
+    >
       <div
         className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-3xl pointer-events-none"
         style={{
@@ -132,26 +126,24 @@ export function ProjectsSection() {
       />
 
       <div className="relative z-10 max-w-[1320px] mx-auto px-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-16">
           <div>
             {/* DISCONNECTED: Selected Projects Header */}
             {/*
             <h2
-  className="font-heading text-4xl md:text-5xl font-bold text-[#cbebe5] mb-4 glitch-text glitch-shiver"
-  data-text="Selected Projects"
-  >
-  Selected Projects
-</h2>
+              className="font-heading text-4xl md:text-5xl font-bold text-[#cbebe5] mb-4 glitch-text glitch-shiver"
+              data-text="Selected Projects"
+            >
+              Selected Projects
+            </h2>
 
-<p
-  className="text-lg text-[#cbebe5]/70 max-w-xl glitch-text glitch-alt"
-  data-text="A curated selection of spatial web, AR, and brand systems."
-  >
-  A curated selection of web design, AR, and brand systems.
-</p>
+            <p
+              className="text-lg text-[#cbebe5]/70 max-w-xl glitch-text glitch-alt"
+              data-text="A curated selection of spatial web, AR, and brand systems."
+            >
+              A curated selection of web design, AR, and brand systems.
+            </p>
             */}
-
           </div>
 
           {/* DISCONNECTED: Navigation Arrows */}
