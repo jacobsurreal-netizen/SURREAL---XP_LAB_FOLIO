@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useSpectrumMode } from '@/hooks/use-spectrum-mode';
 import { createHeroAsset } from './objects/create-hero-asset';
 import { frameObject } from './camera/framing';
 import { OrbitController } from './camera/orbit-controller';
@@ -27,11 +28,18 @@ export function ThreeRuntimeAdapter({
   snapshot,
 }: ThreeRuntimeAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const animationId = useRef<number | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const composerRef = useRef<EffectComposer | null>(null);
-  const progressRef = useRef(progress);
-  const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
+const animationId = useRef<number | null>(null);
+const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+const composerRef = useRef<EffectComposer | null>(null);
+const progressRef = useRef(progress);
+const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
+const heroAssetRef = useRef<THREE.Object3D | null>(null);
+const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+const directionalLightRef = useRef<THREE.DirectionalLight | null>(null);
+const fogRef = useRef<THREE.FogExp2 | null>(null);
+
+const { mode } = useSpectrumMode();
+const spectrumRef = useRef(mode);
 
   // Sync progress prop to ref for use in animation loop
   useEffect(() => {
@@ -43,13 +51,52 @@ export function ThreeRuntimeAdapter({
     snapshotRef.current = snapshot;
   }, [snapshot]);
 
+  // Sync spectrum state to ref for non-reactive scene lifecycle
+  useEffect(() => {
+    spectrumRef.current = mode;
+  }, [mode]);
+
+  // Apply spectrum changes to already-loaded hero asset
+  useEffect(() => {
+    const asset = heroAssetRef.current;
+    if (!asset) return;
+
+    const applySpectrumMode = (
+      asset.userData as { applySpectrumMode?: (mode: 'COLOR' | 'IR') => void }
+    ).applySpectrumMode;
+
+    if (typeof applySpectrumMode === 'function') {
+      applySpectrumMode(mode);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+  const isIR = mode === 'IR';
+
+  const ambient = ambientLightRef.current;
+  const directional = directionalLightRef.current;
+  const fog = fogRef.current;
+
+  if (ambient) {
+    ambient.color.set(isIR ? '#ff3344' : '#6cfc86');
+    ambient.intensity = isIR ? 1.15 : 1.8;
+  }
+
+  if (directional) {
+    directional.color.set(isIR ? '#ff2238' : '#6cfc86');
+    directional.intensity = isIR ? 0.95 : 1.4;
+  }
+
+  if (fog) {
+    fog.color.set(isIR ? '#140203' : '#000000');
+    fog.density = isIR ? 0.055 : 0.045;
+  }
+}, [mode]);
+
   // Parallax tracking
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedPointerRef = useRef({ x: 0, y: 0 });
 
-  // Minimal reference for future hero asset attachment
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let heroAsset: THREE.Object3D | null = null;
   let orbit: OrbitController | null = null;
 
   useEffect(() => {
@@ -60,7 +107,9 @@ export function ThreeRuntimeAdapter({
     const scene = new THREE.Scene();
 
     // Task 7b: Ambient Fog
-    scene.fog = new THREE.FogExp2(0x000000, 0.045);
+    const fog = new THREE.FogExp2(0x000000, 0.045);
+    scene.fog = fog;
+    fogRef.current = fog;
 
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -76,7 +125,7 @@ export function ThreeRuntimeAdapter({
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true
+      alpha: true,
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -95,32 +144,42 @@ export function ThreeRuntimeAdapter({
 
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(container.clientWidth, container.clientHeight),
-      0.25, // strength
-      0.1,  // radius
-      0.25  // threshold
+      0.25,
+      0.1,
+      0.25
     );
     composer.addPass(bloomPass);
     composerRef.current = composer;
 
     // Basic light rig
     const ambientLight = new THREE.AmbientLight(0x6cfc86, 1.8);
-    scene.add(ambientLight);
+scene.add(ambientLight);
+ambientLightRef.current = ambientLight;
 
-    const directionalLight = new THREE.DirectionalLight(0x6cfc86, 1.4);
-    directionalLight.position.set(4, 6, 4);
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
+const directionalLight = new THREE.DirectionalLight(0x6cfc86, 1.4);
+directionalLight.position.set(4, 6, 4);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
+directionalLightRef.current = directionalLight;
 
     // Load and attach hero asset
     createHeroAsset({
       position: [0, 0, 0],
       scale: 1.5,
       enableIdleRotation: true,
-      camera
+      camera,
     })
       .then((asset) => {
         scene.add(asset);
-        heroAsset = asset;
+        heroAssetRef.current = asset;
+
+        const applySpectrumMode = (
+          asset.userData as { applySpectrumMode?: (mode: 'COLOR' | 'IR') => void }
+        ).applySpectrumMode;
+
+        if (typeof applySpectrumMode === 'function') {
+          applySpectrumMode(spectrumRef.current);
+        }
 
         // Camera framing + orbit controller
         const framing = frameObject(camera, asset, {
@@ -256,6 +315,12 @@ export function ThreeRuntimeAdapter({
       window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
+
+      heroAssetRef.current = null;
+
+      ambientLightRef.current = null;
+      directionalLightRef.current = null;
+      fogRef.current = null;
 
       if (rendererRef.current) {
         rendererRef.current.dispose();
