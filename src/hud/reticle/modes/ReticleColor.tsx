@@ -46,6 +46,7 @@ export function ReticleColor({
           height: 180,
           opacity: presentation.intensity,
           borderColor: color,
+          transition: "opacity 0.25s ease-out",
         }}
       />
     </div>

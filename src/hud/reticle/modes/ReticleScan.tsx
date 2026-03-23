@@ -47,6 +47,7 @@ export function ReticleScan({
           borderRight: "80px solid transparent",
           borderBottom: `140px solid ${color}`,
           opacity: presentation.intensity,
+          transition: "opacity 0.25s ease-out",
         }}
       />
     </div>

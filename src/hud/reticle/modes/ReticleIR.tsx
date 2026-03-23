@@ -46,6 +46,7 @@ export function ReticleIR({
           height: 140,
           opacity: presentation.intensity,
           borderColor: color,
+          transition: "opacity 0.25s ease-out",
         }}
       />
     </div>

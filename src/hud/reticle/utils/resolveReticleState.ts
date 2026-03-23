@@ -25,7 +25,10 @@ function resolveState(signals: ReticleRuntimeSignals): ReticleState {
     return "GATEWAY"
   }
 
-  if (signals.isCTAZone || (signals.sectorName ?? "").toUpperCase() === "CTA") {
+  if (
+    signals.isCTAZone ||
+    (signals.sectorName ?? "").toUpperCase() === "CTA"
+  ) {
     return "CTA"
   }
 
@@ -40,22 +43,43 @@ function resolveState(signals: ReticleRuntimeSignals): ReticleState {
   return "IDLE"
 }
 
-function resolveIntensity(state: ReticleState): number {
+function resolveIntensity(
+  mode: ReticleMode,
+  state: ReticleState
+): number {
+  let baseIntensity: number
+
   switch (state) {
     case "CTA":
-      return 1
+      baseIntensity = 1
+      break
     case "GATEWAY":
-      return 0.95
+      baseIntensity = 0.95
+      break
     case "ACTIVE":
-      return 0.8
+      baseIntensity = 0.8
+      break
     case "FOCUS":
-      return 0.65
+      baseIntensity = 0.65
+      break
     case "HOVER":
-      return 0.55
+      baseIntensity = 0.55
+      break
     case "IDLE":
     default:
-      return 0.25
+      baseIntensity = 0.25
+      break
   }
+
+  if (mode === "IR") {
+    return baseIntensity * 0.8
+  }
+
+  if (mode === "SCAN") {
+    return Math.min(baseIntensity * 1.15, 1)
+  }
+
+  return baseIntensity
 }
 
 function resolveParallaxStrength(
@@ -70,12 +94,11 @@ function resolveParallaxStrength(
     return 0.08
   }
 
-  // COLOR
   return state === "IDLE" ? 0.12 : 0.22
 }
 
-function resolveVisibility(state: ReticleState): boolean {
-  return state !== "IDLE" ? true : true
+function resolveVisibility(_state: ReticleState): boolean {
+  return true
 }
 
 export function resolveReticleState(
@@ -88,7 +111,7 @@ export function resolveReticleState(
     mode: signals.mode,
     sector,
     state,
-    intensity: resolveIntensity(state),
+    intensity: resolveIntensity(signals.mode, state),
     parallaxStrength: resolveParallaxStrength(signals.mode, state),
     isVisible: resolveVisibility(state),
   }
