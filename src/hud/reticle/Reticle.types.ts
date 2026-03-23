@@ -16,6 +16,7 @@ export type ReticleRuntimeSignals = {
   sectorIndex?: number | null
   isSnapped?: boolean
   hasRecentInteraction?: boolean
+  isPointerActive?: boolean
   isCTAZone?: boolean
   isGatewayZone?: boolean
 }

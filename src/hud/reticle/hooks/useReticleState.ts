@@ -4,6 +4,7 @@ import { useMemo } from "react"
 
 import { useSpectrumMode } from "@/hooks/use-spectrum-mode"
 import { useOrbitSector } from "@/hooks/use-orbit-sector"
+import { usePointerPresence } from "@/hooks/use-pointer-presence"
 
 import type {
   ReticleMode,
@@ -15,6 +16,7 @@ import { resolveReticleState } from "../utils/resolveReticleState"
 export function useReticleState(): ReticlePresentation {
   const { mode } = useSpectrumMode()
   const { sectorName, isSnapped } = useOrbitSector()
+  const { isPointerActive } = usePointerPresence()
 
   return useMemo(() => {
     const normalizedMode: ReticleMode =
@@ -25,10 +27,11 @@ export function useReticleState(): ReticlePresentation {
       sectorName,
       isSnapped,
       hasRecentInteraction: Boolean(isSnapped),
+      isPointerActive,
       isCTAZone: sectorName === "CTA",
       isGatewayZone: false,
     }
 
     return resolveReticleState(signals)
-  }, [mode, sectorName, isSnapped])
+  }, [mode, sectorName, isSnapped, isPointerActive])
 }

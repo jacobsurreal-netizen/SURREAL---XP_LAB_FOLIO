@@ -36,6 +36,10 @@ function resolveState(signals: ReticleRuntimeSignals): ReticleState {
     return "FOCUS"
   }
 
+  if (signals.isPointerActive) {
+    return "HOVER"
+  }
+
   if (signals.hasRecentInteraction) {
     return "ACTIVE"
   }
@@ -57,17 +61,17 @@ function resolveIntensity(
       baseIntensity = 0.95
       break
     case "ACTIVE":
-      baseIntensity = 0.8
+      baseIntensity = 0.78
       break
     case "FOCUS":
-      baseIntensity = 0.65
+      baseIntensity = 0.7
       break
     case "HOVER":
-      baseIntensity = 0.55
+      baseIntensity = 0.58
       break
     case "IDLE":
     default:
-      baseIntensity = 0.25
+      baseIntensity = 0.22
       break
   }
 
