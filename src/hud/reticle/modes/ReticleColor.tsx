@@ -13,7 +13,7 @@ export function ReticleColor({
     <div
       className="absolute inset-0 pointer-events-none flex items-center justify-center"
       style={{
-        transform: `translate3d(${presentation.motionX}px, ${presentation.motionY}px, 0) scale(${presentation.motionScale})`,
+        transform: `translate3d(${presentation.motionX}px, ${presentation.motionY}px, 0) scale(${presentation.motionScale + presentation.intensity * 0.008})`,
         transformOrigin: "50% 50%",
         transition: "transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 180ms ease-out",
         willChange: "transform",
