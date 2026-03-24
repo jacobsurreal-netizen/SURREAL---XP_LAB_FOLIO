@@ -10,7 +10,12 @@ export function ReticleIR({
   const intensity = presentation.intensity
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+    <div style={{
+  transform: `translate(${presentation.motionX}px, ${presentation.motionY}px) scale(${presentation.motionScale})`,
+  transition: "transform 200ms ease-out, opacity 180ms ease-out",
+}}
+    
+    className="absolute inset-0 pointer-events-none flex items-center justify-center">
       <svg
         width="200"
         height="200"

@@ -5,6 +5,7 @@ import { useMemo } from "react"
 import { useSpectrumMode } from "@/hooks/use-spectrum-mode"
 import { useOrbitSector } from "@/hooks/use-orbit-sector"
 import { usePointerPresence } from "@/hooks/use-pointer-presence"
+import { useMouseParallax } from "../../hooks/use-mouse-parallax"
 
 import type {
   ReticleMode,
@@ -17,6 +18,7 @@ export function useReticleState(): ReticlePresentation {
   const { mode } = useSpectrumMode()
   const { sectorName, isSnapped } = useOrbitSector()
   const { isPointerActive } = usePointerPresence()
+  const { offset } = useMouseParallax(0.05)
 
   return useMemo(() => {
     const normalizedMode: ReticleMode =
@@ -32,6 +34,19 @@ export function useReticleState(): ReticlePresentation {
       isGatewayZone: false,
     }
 
-    return resolveReticleState(signals)
-  }, [mode, sectorName, isSnapped, isPointerActive])
+    const base = resolveReticleState(signals)
+
+    const motionStrength =
+      normalizedMode === "IR" ? 2 : 3.5
+
+    const motionScale =
+      normalizedMode === "IR" ? 1 : 1.01
+
+    return {
+      ...base,
+      motionX: offset.x * motionStrength,
+      motionY: offset.y * motionStrength,
+      motionScale,
+    }
+  }, [mode, sectorName, isSnapped, isPointerActive, offset.x, offset.y])
 }

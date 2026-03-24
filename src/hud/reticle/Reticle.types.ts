@@ -28,4 +28,8 @@ export type ReticlePresentation = {
   intensity: number
   parallaxStrength: number
   isVisible: boolean
+
+  motionX: number
+  motionY: number
+  motionScale: number
 }

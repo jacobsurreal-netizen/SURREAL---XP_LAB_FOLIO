@@ -118,5 +118,8 @@ export function resolveReticleState(
     intensity: resolveIntensity(signals.mode, state),
     parallaxStrength: resolveParallaxStrength(signals.mode, state),
     isVisible: resolveVisibility(state),
+    motionX: 0,
+    motionY: 0,
+    motionScale: 1,
   }
 }
