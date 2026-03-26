@@ -21,6 +21,7 @@ type ThreeRuntimeSnapshot = {
   sectorIndex: number
   sectorName: string
   isSnapped?: boolean
+  spectrumMode?: RuntimeSpectrumMode
 }
 
 type RuntimeSpectrumMode = 'COLOR' | 'IR' | 'SCAN'
@@ -78,30 +79,40 @@ export function ThreeRuntimeAdapter({
     ).applySpectrumMode;
 
     if (typeof applySpectrumMode === 'function') {
-      applySpectrumMode(normalizeRuntimeSpectrum(mode as RuntimeSpectrumMode));
+      applySpectrumMode(mode as HeroSpectrumMode);
     }
   }, [mode]);
 
   useEffect(() => {
-    const isIRLike = mode === 'IR' || mode === 'SCAN';
+    const isIRLike = mode === 'IR';
+    const isScan = mode === 'SCAN';
 
     const ambient = ambientLightRef.current;
     const directional = directionalLightRef.current;
     const fog = fogRef.current;
 
     if (ambient) {
-      ambient.color.set(isIRLike ? '#ff3344' : '#6cfc86');
-      ambient.intensity = isIRLike ? 1.15 : 1.8;
+      ambient.color.set(isScan ? '#a855f7' :isIRLike ? '#ff3344' : '#6cfc86');
+      ambient.intensity =
+  isScan ? 1.4 : isIRLike ? 1.15 : 1.8;
     }
 
     if (directional) {
-      directional.color.set(isIRLike ? '#ff2238' : '#6cfc86');
-      directional.intensity = isIRLike ? 0.95 : 1.4;
+      directional.color.set(
+  isScan ? '#b478ff' : isIRLike ? '#ff2238' : '#6cfc86'
+);
+
+directional.intensity =
+  isScan ? 1.1 : isIRLike ? 0.95 : 1.4;
     }
 
     if (fog) {
-      fog.color.set(isIRLike ? '#140203' : '#000000');
-      fog.density = isIRLike ? 0.055 : 0.045;
+      fog.color.set(
+  isScan ? '#0a0014' : isIRLike ? '#140203' : '#000000'
+);
+
+fog.density =
+  isScan ? 0.065 : isIRLike ? 0.055 : 0.045;
     }
   }, [mode]);
 
@@ -190,7 +201,7 @@ export function ThreeRuntimeAdapter({
         ).applySpectrumMode;
 
         if (typeof applySpectrumMode === 'function') {
-          applySpectrumMode(normalizeRuntimeSpectrum(spectrumRef.current));
+          applySpectrumMode(spectrumRef.current as HeroSpectrumMode);
         }
 
         // Camera framing + orbit controller

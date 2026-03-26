@@ -9,9 +9,14 @@ import { ReticleController } from "./reticle/ReticleController"
 export function HudSkeleton({ children }: { children?: React.ReactNode }) {
   const { mode } = useSpectrumMode();
 
-  const hudMode = mode === 'IR' ? HUD_MODES.IR : HUD_MODES.NORMAL;
+const hudMode =
+  mode === "IR"
+    ? HUD_MODES.IR
+    : mode === "SCAN"
+    ? HUD_MODES.SCAN
+    : HUD_MODES.NORMAL;
 
-  const reticle = useReticleState()
+const reticle = useReticleState();
 
   return (
     <>

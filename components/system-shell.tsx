@@ -51,11 +51,28 @@ export function SystemShell({ children }: SystemShellProps) {
   return (
     <>
       {/* Fixed full-viewport shell */}
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden z-0 bg-black">
+      <div
+  className="fixed inset-0 w-screen h-screen overflow-hidden z-0 bg-black"
+  style={
+    mode === "SCAN"
+      ? {
+          ["--hud-accent" as any]: "rgba(180, 120, 255, 0.95)",
+          ["--hud-accent-dim" as any]: "rgba(120, 70, 180, 0.22)",
+          ["--hud-ink" as any]: "rgba(225, 190, 255, 0.96)",
+          ["--hud-text" as any]: "rgba(205, 170, 255, 0.82)",
+          ["--hud-text-dim" as any]: "rgba(160, 130, 210, 0.55)",
+          ["--hud-glow" as any]: "rgba(190, 130, 255, 0.65)",
+          ["--hud-grid" as any]: "rgba(170, 120, 255, 0.08)",
+          ["--world-radial" as any]: "rgba(120, 40, 220, 0.22)",
+          ["--world-tint" as any]: "rgba(35, 0, 70, 0.45)",
+        }
+      : undefined
+  }
+>
 
         {/* Layer 0: World Foundation */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <WorldLayer progress={smoothedProgress} sector={sectorName} />
+          <WorldLayer progress={smoothedProgress} sector={sectorName} mode={mode} />
         </div>
 
         {/* Layer 10: Three Stage */}
@@ -67,6 +84,7 @@ export function SystemShell({ children }: SystemShellProps) {
               sectorIndex,
               sectorName,
               isSnapped,
+               spectrumMode: mode,
             }}
           />
           <CameraDebugHUD />

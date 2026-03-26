@@ -36,8 +36,15 @@ export function useReticleState(): ReticlePresentation {
 
     const base = resolveReticleState(signals)
 
-    let motionStrength = normalizedMode === "IR" ? 2 : 3.5
-    let motionScale = normalizedMode === "IR" ? 1 : 1.01
+    let motionStrength =
+      normalizedMode === "IR" ? 2 :
+      normalizedMode === "SCAN" ? 4.5 :
+      3.5
+
+    let motionScale =
+      normalizedMode === "IR" ? 1 :
+      normalizedMode === "SCAN" ? 1.03 :
+      1.01
 
     switch (base.state) {
       case "IDLE":

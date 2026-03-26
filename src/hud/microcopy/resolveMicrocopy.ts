@@ -3,6 +3,13 @@ import { HUDMicrocopyContext, HUDMicrocopySlot } from "./microcopy.types"
 export function resolveMicrocopy(ctx: HUDMicrocopyContext): HUDMicrocopySlot {
   const { state, sector, mode } = ctx
 
+  if (mode === "SCAN") {
+  return {
+    primary: "ANALYZING STRUCTURE",
+    secondary: `SCANNING ${sector}`,
+  }
+}
+
   // CTA priority
   if (state === "CTA") {
     return mode === "IR"

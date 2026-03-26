@@ -12,7 +12,7 @@ export interface HeroAssetOptions {
   camera?: THREE.Camera;
 }
 
-export type HeroSpectrumMode = 'COLOR' | 'IR';
+export type HeroSpectrumMode = 'COLOR' | 'IR' | 'SCAN';
 
 /**
  * Creates a procedural radial soft glow texture for atmospheric effects.
@@ -175,15 +175,42 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
     const applySpectrumMode = (mode: HeroSpectrumMode) => {
       const isIR = mode === 'IR';
+      const isScan = mode === 'SCAN';
 
-      const orbColor = isIR ? '#3a0a12' : '#03bc7e';
-      const orbEmissive = isIR ? '#ff3b4d' : '#66f096';
-      const orbEmissiveIntensity = isIR ? 1.15 : 0.8;
+      const orbColor =
+        isScan ? '#2a0a3f' :
+        isIR ? '#3a0a12' :
+        '#03bc7e';
 
-      const tetraColor = isIR ? '#140409' : '#090414';
-      const particleColor = isIR ? '#ff3355' : '#6614ff';
-      const haloColor = isIR ? '#ff2a3d' : '#00f0d4';
-      const haloOpacity = isIR ? 0.22 : 0.15;
+      const orbEmissive =
+        isScan ? '#c084fc' :
+        isIR ? '#ff3b4d' :
+        '#66f096';
+
+      const orbEmissiveIntensity =
+        isScan ? 1.05 :
+        isIR ? 1.15 :
+        0.8;
+
+      const tetraColor =
+        isScan ? '#12061f' :
+        isIR ? '#140409' :
+        '#090414';
+
+      const particleColor =
+        isScan ? '#a855f7' :
+        isIR ? '#ff3355' :
+        '#6614ff';
+
+      const haloColor =
+        isScan ? '#b478ff' :
+        isIR ? '#ff2a3d' :
+        '#00f0d4';
+
+      const haloOpacity =
+        isScan ? 0.08 :
+        isIR ? 0.22 :
+        0.15;
 
       asset.traverse((child) => {
         if (!(child as THREE.Mesh).isMesh) return;
@@ -237,7 +264,13 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         // Update Orb pulse
         if (orbMaterial) {
           const currentMode = (container.userData.spectrumMode as HeroSpectrumMode) ?? 'COLOR';
-          const baseIntensity = currentMode === 'IR' ? 1.15 : 0.8;
+          const baseIntensity =
+            currentMode === 'SCAN'
+              ? 1.05
+              : currentMode === 'IR'
+              ? 1.15
+              : 0.8;
+
           orbMaterial.emissiveIntensity = baseIntensity + mainPulse * 0.25;
         }
         if (orbMesh) {
@@ -264,7 +297,13 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
         // 3. Synchronized Halo Pulse
         const currentMode = (container.userData.spectrumMode as HeroSpectrumMode) ?? 'COLOR';
-        const baseHaloOpacity = currentMode === 'IR' ? 0.22 : 0.15;
+        const baseHaloOpacity =
+          currentMode === 'SCAN'
+            ? 0.18
+            : currentMode === 'IR'
+            ? 0.22
+            : 0.15;
+
         const haloPulse = Math.sin(elapsedTime * 0.7) * 0.05;
         halo.scale.setScalar(1 + haloPulse);
         haloMaterial.opacity = baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.04;
