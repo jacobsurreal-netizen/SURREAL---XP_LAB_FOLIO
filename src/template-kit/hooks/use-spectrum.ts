@@ -3,7 +3,7 @@
 import { engine } from "../engine"
 import { useEngineSnapshot } from "./use-engine-snapshot"
 
-export type SpectrumMode = "COLOR" | "IR"
+export type SpectrumMode = "COLOR" | "IR" | "SCAN"
 
 export function useSpectrum() {
   const snap = useEngineSnapshot()

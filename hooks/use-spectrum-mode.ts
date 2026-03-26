@@ -2,7 +2,11 @@
 
 import { useSpectrum as useEngineSpectrum } from "@/src/template-kit/hooks"
 
-export type SpectrumMode = "COLOR" | "IR"
+export type SpectrumMode = "COLOR" | "IR" | "SCAN"
+
+export type SpectrumModeUpdater =
+  | SpectrumMode
+  | ((prev: SpectrumMode) => SpectrumMode)
 
 /**
  * App-friendly wrapper around the template-kit engine spectrum hook.
@@ -14,7 +18,15 @@ export function useSpectrumMode() {
 
   return {
     mode,
-    setMode: (next: SpectrumMode) => setSpectrum(next),
+    setMode: (next: SpectrumModeUpdater) => {
+       const resolved =
+    typeof next === "function" ? next(mode) : next
+
+  // ❗ ENGINE SAFE GUARD
+  const engineMode = resolved === "SCAN" ? "IR" : resolved
+
+  setSpectrum(engineMode)
+    },
     toggle: toggleSpectrum,
   }
 }
@@ -24,6 +36,7 @@ export function useSpectrumMode() {
  */
 export function useSpectrumModeLegacy() {
   const { mode, setMode, toggle } = useSpectrumMode()
+
   return {
     spectrumMode: mode,
     setSpectrumMode: setMode,

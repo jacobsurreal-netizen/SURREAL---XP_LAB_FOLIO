@@ -23,23 +23,35 @@ type ThreeRuntimeSnapshot = {
   isSnapped?: boolean
 }
 
+type RuntimeSpectrumMode = 'COLOR' | 'IR' | 'SCAN'
+
+type HeroSpectrumMode = 'COLOR' | 'IR'
+
+function normalizeRuntimeSpectrum(mode: RuntimeSpectrumMode): HeroSpectrumMode {
+  if (mode === 'SCAN') {
+    return 'IR'
+  }
+
+  return mode
+}
+
 export function ThreeRuntimeAdapter({
   progress = 0,
   snapshot,
 }: ThreeRuntimeAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-const animationId = useRef<number | null>(null);
-const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-const composerRef = useRef<EffectComposer | null>(null);
-const progressRef = useRef(progress);
-const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
-const heroAssetRef = useRef<THREE.Object3D | null>(null);
-const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
-const directionalLightRef = useRef<THREE.DirectionalLight | null>(null);
-const fogRef = useRef<THREE.FogExp2 | null>(null);
+  const animationId = useRef<number | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const composerRef = useRef<EffectComposer | null>(null);
+  const progressRef = useRef(progress);
+  const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
+  const heroAssetRef = useRef<THREE.Object3D | null>(null);
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const directionalLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const fogRef = useRef<THREE.FogExp2 | null>(null);
 
-const { mode } = useSpectrumMode();
-const spectrumRef = useRef(mode);
+  const { mode } = useSpectrumMode();
+  const spectrumRef = useRef<RuntimeSpectrumMode>(mode as RuntimeSpectrumMode);
 
   // Sync progress prop to ref for use in animation loop
   useEffect(() => {
@@ -53,7 +65,7 @@ const spectrumRef = useRef(mode);
 
   // Sync spectrum state to ref for non-reactive scene lifecycle
   useEffect(() => {
-    spectrumRef.current = mode;
+    spectrumRef.current = mode as RuntimeSpectrumMode;
   }, [mode]);
 
   // Apply spectrum changes to already-loaded hero asset
@@ -62,36 +74,36 @@ const spectrumRef = useRef(mode);
     if (!asset) return;
 
     const applySpectrumMode = (
-      asset.userData as { applySpectrumMode?: (mode: 'COLOR' | 'IR') => void }
+      asset.userData as { applySpectrumMode?: (mode: HeroSpectrumMode) => void }
     ).applySpectrumMode;
 
     if (typeof applySpectrumMode === 'function') {
-      applySpectrumMode(mode);
+      applySpectrumMode(normalizeRuntimeSpectrum(mode as RuntimeSpectrumMode));
     }
   }, [mode]);
 
   useEffect(() => {
-  const isIR = mode === 'IR';
+    const isIRLike = mode === 'IR' || mode === 'SCAN';
 
-  const ambient = ambientLightRef.current;
-  const directional = directionalLightRef.current;
-  const fog = fogRef.current;
+    const ambient = ambientLightRef.current;
+    const directional = directionalLightRef.current;
+    const fog = fogRef.current;
 
-  if (ambient) {
-    ambient.color.set(isIR ? '#ff3344' : '#6cfc86');
-    ambient.intensity = isIR ? 1.15 : 1.8;
-  }
+    if (ambient) {
+      ambient.color.set(isIRLike ? '#ff3344' : '#6cfc86');
+      ambient.intensity = isIRLike ? 1.15 : 1.8;
+    }
 
-  if (directional) {
-    directional.color.set(isIR ? '#ff2238' : '#6cfc86');
-    directional.intensity = isIR ? 0.95 : 1.4;
-  }
+    if (directional) {
+      directional.color.set(isIRLike ? '#ff2238' : '#6cfc86');
+      directional.intensity = isIRLike ? 0.95 : 1.4;
+    }
 
-  if (fog) {
-    fog.color.set(isIR ? '#140203' : '#000000');
-    fog.density = isIR ? 0.055 : 0.045;
-  }
-}, [mode]);
+    if (fog) {
+      fog.color.set(isIRLike ? '#140203' : '#000000');
+      fog.density = isIRLike ? 0.055 : 0.045;
+    }
+  }, [mode]);
 
   // Parallax tracking
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -153,14 +165,14 @@ const spectrumRef = useRef(mode);
 
     // Basic light rig
     const ambientLight = new THREE.AmbientLight(0x6cfc86, 1.8);
-scene.add(ambientLight);
-ambientLightRef.current = ambientLight;
+    scene.add(ambientLight);
+    ambientLightRef.current = ambientLight;
 
-const directionalLight = new THREE.DirectionalLight(0x6cfc86, 1.4);
-directionalLight.position.set(4, 6, 4);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
-directionalLightRef.current = directionalLight;
+    const directionalLight = new THREE.DirectionalLight(0x6cfc86, 1.4);
+    directionalLight.position.set(4, 6, 4);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+    directionalLightRef.current = directionalLight;
 
     // Load and attach hero asset
     createHeroAsset({
@@ -174,11 +186,11 @@ directionalLightRef.current = directionalLight;
         heroAssetRef.current = asset;
 
         const applySpectrumMode = (
-          asset.userData as { applySpectrumMode?: (mode: 'COLOR' | 'IR') => void }
+          asset.userData as { applySpectrumMode?: (mode: HeroSpectrumMode) => void }
         ).applySpectrumMode;
 
         if (typeof applySpectrumMode === 'function') {
-          applySpectrumMode(spectrumRef.current);
+          applySpectrumMode(normalizeRuntimeSpectrum(spectrumRef.current));
         }
 
         // Camera framing + orbit controller

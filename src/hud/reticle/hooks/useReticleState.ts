@@ -22,7 +22,7 @@ export function useReticleState(): ReticlePresentation {
 
   return useMemo(() => {
     const normalizedMode: ReticleMode =
-      mode === "IR" ? "IR" : "COLOR"
+      mode === "IR" ? "IR" : mode === "SCAN" ? "SCAN" : "COLOR"
 
     const signals: ReticleRuntimeSignals = {
       mode: normalizedMode,

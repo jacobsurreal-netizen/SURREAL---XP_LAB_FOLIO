@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { WorldLayer } from "./world-layer"
 import { HUDLayer } from "./hud-layer"
 import { useOrbitSector } from "@/hooks/use-orbit-sector"
@@ -18,12 +18,14 @@ interface SystemShellProps {
 
 export function SystemShell({ children }: SystemShellProps) {
   const { progress, sectorIndex, sectorName, isSnapped, goToSector } = useOrbitSector()
+
   const smoothedProgress = useSmoothedProgress(progress, {
     lerpFactor: 0.015,
     epsilon: 0.0005,
   })
 
-  const { mode, toggle: toggleSpectrum } = useSpectrumMode()
+  const { mode, setMode, toggle: toggleSpectrum } = useSpectrumMode()
+
   const hudOpacity = useHudInactivity(sectorIndex)
   const { lang, cycle: cycleLang, t } = useLanguage()
 
@@ -34,16 +36,29 @@ export function SystemShell({ children }: SystemShellProps) {
     cycleLang,
   })
 
+  // 🔥 DEV: SCAN toggle on "S"
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key.toLowerCase() === "s") {
+        setMode((prev: any) => (prev === "SCAN" ? "COLOR" : "SCAN"))
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [setMode])
+
   return (
     <>
       {/* Fixed full-viewport shell */}
       <div className="fixed inset-0 w-screen h-screen overflow-hidden z-0 bg-black">
-        {/* Layer 0: World Foundation (Atmospheric Overlays) */}
+
+        {/* Layer 0: World Foundation */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <WorldLayer progress={smoothedProgress} sector={sectorName} />
         </div>
 
-        {/* Layer 10: Pinned Three Stage (Artifact) */}
+        {/* Layer 10: Three Stage */}
         <div className="absolute inset-0 z-10 pointer-events-none">
           <ThreeRuntimeAdapter
             progress={smoothedProgress}
@@ -57,7 +72,7 @@ export function SystemShell({ children }: SystemShellProps) {
           <CameraDebugHUD />
         </div>
 
-        {/* Layer 20: IR overlay tint */}
+        {/* Layer 20: IR overlay */}
         {mode === "IR" && (
           <div
             className="absolute inset-0 pointer-events-none z-20 mix-blend-multiply"
@@ -65,7 +80,31 @@ export function SystemShell({ children }: SystemShellProps) {
           />
         )}
 
-        {/* Layer 30+: HUD & Interface */}
+        {/* 🔥 Layer 20: SCAN overlay */}
+        {mode === "SCAN" && (
+          <div className="absolute inset-0 pointer-events-none z-20">
+            {/* vignette + blur */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0.42) 100%)",
+                backdropFilter: "blur(2px)",
+              }}
+            />
+
+            {/* scanlines */}
+            <div
+              className="absolute inset-0 mix-blend-screen"
+              style={{
+                background:
+                  "repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 2px, transparent 4px)",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Layer 30: HUD */}
         <div
           className="absolute inset-0 z-30 transition-opacity duration-700 ease-in-out pointer-events-none"
           style={{ opacity: hudOpacity }}
@@ -82,7 +121,7 @@ export function SystemShell({ children }: SystemShellProps) {
             t={t}
           />
 
-          {/* Center debug sector label (Layer 40) */}
+          {/* Debug sector label */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
             <div className="flex flex-col items-center gap-4">
               <span
@@ -97,13 +136,13 @@ export function SystemShell({ children }: SystemShellProps) {
         </div>
       </div>
 
-      {/* Scrollable Content Slot */}
+      {/* Scrollable Content */}
       <div
-  className="relative z-[100] w-full overflow-x-hidden"
-  style={{ minHeight: "600vh" }}
->
-  {children}
-</div>
+        className="relative z-[100] w-full overflow-x-hidden"
+        style={{ minHeight: "600vh" }}
+      >
+        {children}
+      </div>
     </>
   )
 }
