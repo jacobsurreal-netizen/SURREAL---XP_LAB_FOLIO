@@ -51,7 +51,7 @@ export function SystemShell({ children }: SystemShellProps) {
   }, [setMode])
 
   useEffect(() => {
-  if (mode !== "SCAN") {
+  if (mode === "SCAN") {
     setScanTransition(false)
     return
   }
