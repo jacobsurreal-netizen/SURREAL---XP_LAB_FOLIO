@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { WorldLayer } from "./world-layer"
 import { HUDLayer } from "./hud-layer"
 import { useOrbitSector } from "@/hooks/use-orbit-sector"
@@ -26,6 +26,8 @@ export function SystemShell({ children }: SystemShellProps) {
 
   const { mode, setMode, toggle: toggleSpectrum } = useSpectrumMode()
 
+  const [scanTransition, setScanTransition] = useState(false)
+
   const hudOpacity = useHudInactivity(sectorIndex)
   const { lang, cycle: cycleLang, t } = useLanguage()
 
@@ -47,6 +49,21 @@ export function SystemShell({ children }: SystemShellProps) {
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [setMode])
+
+  useEffect(() => {
+  if (mode === "SCAN") {
+    setScanTransition(false)
+    return
+  }
+
+  setScanTransition(true)
+
+  const timeout = window.setTimeout(() => {
+    setScanTransition(false)
+  }, 520)
+
+  return () => window.clearTimeout(timeout)
+}, [mode])
 
   return (
     <>
@@ -100,27 +117,40 @@ export function SystemShell({ children }: SystemShellProps) {
 
         {/* 🔥 Layer 20: SCAN overlay */}
         {mode === "SCAN" && (
-          <div className="absolute inset-0 pointer-events-none z-20">
-            {/* vignette + blur */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0.42) 100%)",
-                backdropFilter: "blur(2px)",
-              }}
-            />
+  <div className="absolute inset-0 pointer-events-none z-20">
+    {/* vignette + blur */}
+    <div
+      className="absolute inset-0 transition-all duration-500 ease-out"
+      style={{
+        background:
+          "radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, rgba(18,0,36,0.18) 40%, rgba(0,0,0,0.5) 100%)",
+        backdropFilter: scanTransition ? "blur(4px)" : "blur(2px)",
+        opacity: scanTransition ? 1 : 0.88,
+      }}
+    />
 
-            {/* scanlines */}
-            <div
-              className="absolute inset-0 mix-blend-screen"
-              style={{
-                background:
-                  "repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 2px, transparent 4px)",
-              }}
-            />
-          </div>
-        )}
+    {/* scan lines */}
+    <div
+      className="absolute inset-0 mix-blend-screen transition-opacity duration-500"
+      style={{
+        opacity: scanTransition ? 0.68 : 0.34,
+        background:
+          "repeating-linear-gradient(to bottom, rgba(215,170,255,0.025) 0px, rgba(215,170,255,0.025) 1px, transparent 2px, transparent 4px)",
+      }}
+    />
+
+    {/* sweep flash */}
+    <div
+      className="absolute inset-0 transition-opacity duration-300"
+      style={{
+        opacity: scanTransition ? 0.22 : 0,
+        background:
+          "linear-gradient(90deg, transparent, rgba(220,180,255,0.12), transparent)",
+        mixBlendMode: "screen",
+      }}
+    />
+  </div>
+)}
 
         {/* Layer 30: HUD */}
         <div

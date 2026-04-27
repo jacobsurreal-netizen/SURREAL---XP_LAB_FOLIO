@@ -63,11 +63,10 @@ export function useSpectrumMode() {
       typeof next === "function" ? next(mode) : next
 
     if (resolved === "SCAN") {
-      setScanOverride(true)
-      // engine-safe fallback
-      setSpectrum("IR")
-      return
-    }
+  setScanOverride(true)
+  setSpectrum("COLOR") // Default to COLOR when entering SCAN, but engine mode is effectively ignored while in SCAN
+  return
+}
 
     setScanOverride(false)
     setSpectrum(resolved)

@@ -26,16 +26,7 @@ type ThreeRuntimeSnapshot = {
 }
 
 type RuntimeSpectrumMode = 'COLOR' | 'IR' | 'SCAN'
-
-type HeroSpectrumMode = 'COLOR' | 'IR'
-
-function normalizeRuntimeSpectrum(mode: RuntimeSpectrumMode): HeroSpectrumMode {
-  if (mode === 'SCAN') {
-    return 'IR'
-  }
-
-  return mode
-}
+type HeroSpectrumMode = 'COLOR' | 'IR' | 'SCAN'
 
 export function ThreeRuntimeAdapter({
   progress = 0,
@@ -86,37 +77,47 @@ export function ThreeRuntimeAdapter({
   }, [mode]);
 
   useEffect(() => {
-    const isIRLike = mode === 'IR';
-    const isScan = mode === 'SCAN';
+  const isIR = mode === 'IR';
+  const isScan = mode === 'SCAN';
 
-    const ambient = ambientLightRef.current;
-    const directional = directionalLightRef.current;
-    const fog = fogRef.current;
+  const ambient = ambientLightRef.current;
+  const directional = directionalLightRef.current;
+  const fog = fogRef.current;
+  const composer = composerRef.current;
 
-    if (ambient) {
-      ambient.color.set(isScan ? '#a855f7' :isIRLike ? '#ff3344' : '#6cfc86');
-      ambient.intensity =
-  isScan ? 1.4 : isIRLike ? 1.15 : 1.8;
+  if (ambient) {
+    ambient.color.set(
+      isScan ? '#b478ff' : isIR ? '#ff3344' : '#6cfc86'
+    );
+    ambient.intensity = isScan ? 1.05 : isIR ? 1.15 : 1.8;
+  }
+
+  if (directional) {
+    directional.color.set(
+      isScan ? '#d2a7ff' : isIR ? '#ff2238' : '#6cfc86'
+    );
+    directional.intensity = isScan ? 0.82 : isIR ? 0.95 : 1.4;
+  }
+
+  if (fog) {
+    fog.color.set(
+      isScan ? '#090014' : isIR ? '#140203' : '#000000'
+    );
+    fog.density = isScan ? 0.078 : isIR ? 0.055 : 0.045;
+  }
+
+  if (composer) {
+    const bloomPass = composer.passes.find(
+      (pass) => pass instanceof UnrealBloomPass
+    ) as UnrealBloomPass | undefined;
+
+    if (bloomPass) {
+      bloomPass.strength = isScan ? 0.11 : isIR ? 0.18 : 0.25;
+      bloomPass.radius = isScan ? 0.04 : 0.1;
+      bloomPass.threshold = isScan ? 0.42 : 0.25;
     }
-
-    if (directional) {
-      directional.color.set(
-  isScan ? '#b478ff' : isIRLike ? '#ff2238' : '#6cfc86'
-);
-
-directional.intensity =
-  isScan ? 1.1 : isIRLike ? 0.95 : 1.4;
-    }
-
-    if (fog) {
-      fog.color.set(
-  isScan ? '#0a0014' : isIRLike ? '#140203' : '#000000'
-);
-
-fog.density =
-  isScan ? 0.065 : isIRLike ? 0.055 : 0.045;
-    }
-  }, [mode]);
+  }
+}, [mode]);
 
   // Parallax tracking
   const pointerRef = useRef({ x: 0, y: 0 });
