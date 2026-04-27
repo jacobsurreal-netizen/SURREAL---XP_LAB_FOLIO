@@ -9,6 +9,7 @@ import { mapScrollToOrbit } from './camera/scroll-camera-bridge';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { engine } from '../template-kit/engine';
 
 interface ThreeRuntimeAdapterProps {
   progress?: number
@@ -40,9 +41,10 @@ export function ThreeRuntimeAdapter({
     progressRef.current = progress;
   }, [progress]);
 
-  // Parallax tracking
+  // Parallax and Scroll Orbit tracking
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedPointerRef = useRef({ x: 0, y: 0 });
+  const smoothedOrbitRef = useRef(0);
 
   // Minimal reference for future hero asset attachment
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
