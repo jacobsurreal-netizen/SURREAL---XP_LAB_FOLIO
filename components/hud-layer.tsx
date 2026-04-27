@@ -2,6 +2,8 @@
 
 import type { SpectrumMode } from "@/hooks/use-spectrum-mode"
 import type { Language } from "@/hooks/use-language"
+import { useReticleState } from "@/src/hud/reticle/hooks/useReticleState"
+import { resolveMicrocopy } from "@/src/hud/microcopy/resolveMicrocopy"
 
 interface HUDLayerProps {
   progress: number
@@ -31,6 +33,7 @@ function formatTimecode(progress: number): string {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}:${f.toString().padStart(2, "0")}`
 }
 
+
 export function HUDLayer({
   progress,
   sector,
@@ -42,20 +45,45 @@ export function HUDLayer({
   onCycleLang,
   t,
 }: HUDLayerProps) {
+
+
+const reticle = useReticleState()
+
+const microcopy = resolveMicrocopy({
+  mode: reticle.mode,
+  state: reticle.state,
+  sector: reticle.sector,
+})
+
   return (
-    <div className="absolute inset-0 z-30" role="region" aria-label="HUD Overlay">
+    <div
+  className="absolute inset-0 z-30 transition-all duration-300"
+  style={{
+    filter: spectrumMode === "SCAN" ? "contrast(1.3) brightness(1.1)" : "none",
+  }}
+  role="region" aria-label="HUD Overlay">
       {/* ---- TOP-LEFT TELEMETRY ---- */}
       <div className="absolute top-5 left-5 md:top-8 md:left-8 pointer-events-none select-none">
         <div className="flex flex-col gap-0.5">
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
-            style={{ color: "var(--hud-ink)" }}
+           style={{
+  color:
+    spectrumMode === "SCAN"
+      ? "rgba(200,150,255,0.9)"
+      : "var(--hud-ink)",
+}} 
           >
-            {`SYSTEM_LINK: ${t("SYSTEM_LINK")}`}
+            {`SYSTEM_LINK: ${microcopy.primary}`}
           </span>
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
-            style={{ color: "var(--hud-ink)" }}
+            style={{
+  color:
+    spectrumMode === "SCAN"
+      ? "rgba(200,150,255,0.9)"
+      : "var(--hud-ink)",
+}}
           >
             {`PROBE_STATE: ${t("PROBE_STATE")}`}
           </span>

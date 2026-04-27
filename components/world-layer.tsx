@@ -3,9 +3,10 @@
 interface WorldLayerProps {
   progress: number
   sector: string
+  mode?: string
 }
 
-export function WorldLayer({ progress }: WorldLayerProps) {
+export function WorldLayer({ progress, sector, mode }: WorldLayerProps) {
   // Subtle radial intensity shift per sector
   const getRadialIntensity = () => {
     if (progress < 0.25) return 0.02 + (progress / 0.25) * 0.03
@@ -17,9 +18,7 @@ export function WorldLayer({ progress }: WorldLayerProps) {
   const intensity = getRadialIntensity()
 
   return (
-    <div
-      className="absolute inset-0 transition-colors duration-700"
-    >
+    <div className="absolute inset-0 transition-colors duration-700">
       {/* Radial glow center -- driven by tokens */}
       <div
         className="absolute inset-0"
@@ -98,10 +97,69 @@ export function WorldLayer({ progress }: WorldLayerProps) {
       />
 
       {/* Corner markers */}
-      <div className="absolute top-6 left-6 w-4 h-4" style={{ borderLeft: "1px solid var(--hud-accent-dim)", borderTop: "1px solid var(--hud-accent-dim)" }} />
-      <div className="absolute top-6 right-6 w-4 h-4" style={{ borderRight: "1px solid var(--hud-accent-dim)", borderTop: "1px solid var(--hud-accent-dim)" }} />
-      <div className="absolute bottom-6 left-6 w-4 h-4" style={{ borderLeft: "1px solid var(--hud-accent-dim)", borderBottom: "1px solid var(--hud-accent-dim)" }} />
-      <div className="absolute bottom-6 right-6 w-4 h-4" style={{ borderRight: "1px solid var(--hud-accent-dim)", borderBottom: "1px solid var(--hud-accent-dim)" }} />
+      <div
+        className="absolute top-6 left-6 w-4 h-4"
+        style={{
+          borderLeft: "1px solid var(--hud-accent-dim)",
+          borderTop: "1px solid var(--hud-accent-dim)",
+        }}
+      />
+      <div
+        className="absolute top-6 right-6 w-4 h-4"
+        style={{
+          borderRight: "1px solid var(--hud-accent-dim)",
+          borderTop: "1px solid var(--hud-accent-dim)",
+        }}
+      />
+      <div
+        className="absolute bottom-6 left-6 w-4 h-4"
+        style={{
+          borderLeft: "1px solid var(--hud-accent-dim)",
+          borderBottom: "1px solid var(--hud-accent-dim)",
+        }}
+      />
+      <div
+        className="absolute bottom-6 right-6 w-4 h-4"
+        style={{
+          borderRight: "1px solid var(--hud-accent-dim)",
+          borderBottom: "1px solid var(--hud-accent-dim)",
+        }}
+      />
+
+      {/* 🔥 SCAN MODE OVERLAY */}
+      {mode === "SCAN" && (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Purple X-ray wash */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at center, rgba(140, 0, 255, 0.08) 0%, rgba(20, 0, 40, 0.65) 60%, rgba(0,0,0,0.9) 100%)",
+              backdropFilter: "blur(3px)",
+              transition: "opacity 0.4s ease",
+            }}
+          />
+
+          {/* Scan lines */}
+          <div
+            className="absolute inset-0 mix-blend-screen"
+            style={{
+              background:
+                "repeating-linear-gradient(to bottom, rgba(180,120,255,0.04) 0px, rgba(180,120,255,0.04) 1px, transparent 2px, transparent 5px)",
+            }}
+          />
+
+          {/* Subtle glitch pulse */}
+          <div
+            className="absolute inset-0 animate-pulse"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(200,150,255,0.05), transparent)",
+              mixBlendMode: "screen",
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }

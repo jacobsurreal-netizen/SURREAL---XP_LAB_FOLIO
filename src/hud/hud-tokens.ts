@@ -7,6 +7,7 @@
 export const HUD_MODES = {
   NORMAL: "NORMAL",
   IR: "IR",
+  SCAN: "SCAN",
 } as const
 
 export type HudMode = (typeof HUD_MODES)[keyof typeof HUD_MODES]
@@ -24,6 +25,12 @@ export const HUD_TOKENS = {
     accentGlow: "#ff224422",
     accentMicro: "#ff224418",
   },
+  SCAN: {
+  accent: "#b478ff",
+  accentDim: "rgba(120,70,180,0.25)",
+  accentGlow: "rgba(190,130,255,0.7)",
+  accentMicro: "rgba(200,150,255,0.6)",
+},
   shared: {
     parallax: { grid: 2, frameA: 6, frameB: 10, reticle: 16 },
     opacity: {
