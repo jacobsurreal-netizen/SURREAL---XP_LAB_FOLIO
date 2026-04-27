@@ -12,10 +12,12 @@ export interface HeroAssetOptions {
   camera?: THREE.Camera;
 }
 
+export type HeroSpectrumMode = 'COLOR' | 'IR';
+
 /**
  * Creates a procedural radial soft glow texture for atmospheric effects.
  */
-function createGlowTexture(color: string = "#03bc7e"): THREE.Texture {
+function createGlowTexture(): THREE.Texture {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;
@@ -23,21 +25,20 @@ function createGlowTexture(color: string = "#03bc7e"): THREE.Texture {
   if (!context) return new THREE.Texture();
 
   const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(0.2, color);
-  gradient.addColorStop(0.5, 'rgba(3, 188, 126, 0.2)');
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.2, 'rgba(255,255,255,0.95)');
+  gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
 
   context.fillStyle = gradient;
   context.fillRect(0, 0, 128, 128);
 
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
+  return new THREE.CanvasTexture(canvas);
 }
 
 /**
  * Creates and configures the hero asset with microparticles and smooth rolling motion.
- * 
+ *
  * @param options - Configuration options for the hero asset.
  * @returns Promise<THREE.Object3D>
  */
@@ -48,8 +49,7 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
     rotation = [0, 0, 0],
     scale = 1,
     camera,
-    enableIdleRotation = true
-
+    enableIdleRotation = true,
   } = options;
 
   try {
@@ -57,7 +57,7 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
     // Create a parent container for local coordinate nesting
     const container = new THREE.Group();
-    container.name = "HeroAssetContainer";
+    container.name = 'HeroAssetContainer';
 
     // Apply main transforms to container
     container.position.set(...position);
@@ -92,13 +92,13 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
           if (name.includes('orb') || name.includes('sphere')) {
             orbMaterial = mat;
             orbMesh = mesh;
-            if ('color' in mat) mat.color.set("#03bc7e");
-            if ('emissive' in mat) mat.emissive.set("#66f096");
+            if ('color' in mat) mat.color.set('#03bc7e');
+            if ('emissive' in mat) mat.emissive.set('#66f096');
             if ('emissiveIntensity' in mat) mat.emissiveIntensity = 0.8;
           }
           // --- Task 8b: Tetrahedron Material Override ---
           else if (name.includes('tetra') || name.includes('pyramid')) {
-            if ('color' in mat) mat.color.set("#090414");
+            if ('color' in mat) mat.color.set('#090414');
             if ('roughness' in mat) mat.roughness = 0.65;
             if ('metalness' in mat) mat.metalness = 0.52;
           }
@@ -134,33 +134,34 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
     const material = new THREE.PointsMaterial({
-      color: 0x6614ff, // Faint blue/orb energy mood
+      color: 0x6614ff,
       size: 0.008,
       transparent: true,
       opacity: 0.65,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      sizeAttenuation: true
+      sizeAttenuation: true,
     });
 
     const particles = new THREE.Points(geometry, material);
     container.add(particles);
 
     // --- Task: Background Halo/Fog Layer ---
-    const haloTexture = createGlowTexture("#005337");
+    const haloTexture = createGlowTexture();
     const haloMaterial = new THREE.MeshBasicMaterial({
       map: haloTexture,
       transparent: true,
       opacity: 0.15,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      visible: true
+      visible: true,
+      color: '#00f0d4',
     });
 
     const haloGeometry = new THREE.PlaneGeometry(7, 5);
     const halo = new THREE.Mesh(haloGeometry, haloMaterial);
 
-    halo.name = "HeroBackgroundHalo";
+    halo.name = 'HeroBackgroundHalo';
 
     if (camera) {
       // attach halo to camera space so it stays fixed relative to viewer
@@ -172,6 +173,50 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
       container.add(halo);
     }
 
+    const applySpectrumMode = (mode: HeroSpectrumMode) => {
+      const isIR = mode === 'IR';
+
+      const orbColor = isIR ? '#3a0a12' : '#03bc7e';
+      const orbEmissive = isIR ? '#ff3b4d' : '#66f096';
+      const orbEmissiveIntensity = isIR ? 1.15 : 0.8;
+
+      const tetraColor = isIR ? '#140409' : '#090414';
+      const particleColor = isIR ? '#ff3355' : '#6614ff';
+      const haloColor = isIR ? '#ff2a3d' : '#00f0d4';
+      const haloOpacity = isIR ? 0.22 : 0.15;
+
+      asset.traverse((child) => {
+        if (!(child as THREE.Mesh).isMesh) return;
+
+        const mesh = child as THREE.Mesh;
+        const name = mesh.name.toLowerCase();
+
+        if (mesh.material && !Array.isArray(mesh.material)) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+
+          if (name.includes('orb') || name.includes('sphere')) {
+            if ('color' in mat) mat.color.set(orbColor);
+            if ('emissive' in mat) mat.emissive.set(orbEmissive);
+            if ('emissiveIntensity' in mat) mat.emissiveIntensity = orbEmissiveIntensity;
+          } else if (name.includes('tetra') || name.includes('pyramid')) {
+            if ('color' in mat) mat.color.set(tetraColor);
+          }
+
+          mat.needsUpdate = true;
+        }
+      });
+
+      material.color.set(particleColor);
+      haloMaterial.color.set(haloColor);
+      haloMaterial.opacity = haloOpacity;
+      haloMaterial.needsUpdate = true;
+
+      container.userData.spectrumMode = mode;
+    };
+
+    applySpectrumMode('COLOR');
+    container.userData.applySpectrumMode = applySpectrumMode;
+
     // --- Task C & D: Update Hook ---
     if (enableIdleRotation) {
       let elapsedTime = 0;
@@ -181,7 +226,7 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
         // 1. Slow rolling motion for the model
         // combine slow Y with subtle X rolling
-        asset.rotation.y = elapsedTime * 0.1; // slower than previous 0.5
+        asset.rotation.y = elapsedTime * 0.1;
         asset.rotation.x = Math.sin(elapsedTime * 0.08) * 1.75;
         asset.rotation.z = Math.cos(elapsedTime * 0.06) * 1.45;
 
@@ -191,8 +236,9 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
         // Update Orb pulse
         if (orbMaterial) {
-          // emmision intensity oscilation (0.8 base)
-          orbMaterial.emissiveIntensity = 0.8 + mainPulse * 0.25;
+          const currentMode = (container.userData.spectrumMode as HeroSpectrumMode) ?? 'COLOR';
+          const baseIntensity = currentMode === 'IR' ? 1.15 : 0.8;
+          orbMaterial.emissiveIntensity = baseIntensity + mainPulse * 0.25;
         }
         if (orbMesh) {
           // subtle orb scale pulse
@@ -201,7 +247,7 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         }
 
         // 2. Coordinated particle drift with pulse
-        const driftPulse = 1.0 + mainPulse * 0.4; // subtle expand/contract
+        const driftPulse = 1.0 + mainPulse * 0.4;
         const posAttr = geometry.attributes.position as THREE.BufferAttribute;
         for (let i = 0; i < particleCount; i++) {
           const off = i * 0.1;
@@ -217,9 +263,11 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         posAttr.needsUpdate = true;
 
         // 3. Synchronized Halo Pulse
+        const currentMode = (container.userData.spectrumMode as HeroSpectrumMode) ?? 'COLOR';
+        const baseHaloOpacity = currentMode === 'IR' ? 0.22 : 0.15;
         const haloPulse = Math.sin(elapsedTime * 0.7) * 0.05;
         halo.scale.setScalar(1 + haloPulse);
-        halo.material.opacity = 0.15 + Math.sin(elapsedTime * 0.7) * 0.04;
+        haloMaterial.opacity = baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.04;
       };
     }
 
