@@ -15,13 +15,11 @@ export function ContactSection() {
   return (
     <section
       id="contact"
-      className="relative py-32"
+      className="relative min-h-[140svh] py-40"
       style={{
-        background:
-          "linear-gradient(180deg, #0d1f1c 0%, #040b0a 100%)",
+        background: "linear-gradient(180deg, #0d1f1c 0%, #040b0a 100%)",
       }}
     >
-      {/* Background glow */}
       <div
         className="absolute inset-x-0 top-0 h-64 pointer-events-none"
         style={{
@@ -32,18 +30,16 @@ export function ContactSection() {
 
       <div className="relative z-10 max-w-[800px] mx-auto px-6 text-center">
         <h2
-        className="font-heading text-4xl md:text-5xl font-bold text-[#cbebe5] mb-6 glitch-text glitch-strobe"
-        data-text="Let's Create Something"
+          className="font-heading text-4xl md:text-5xl font-bold text-[#cbebe5] mb-6 glitch-text glitch-strobe"
+          data-text="Let's Create Something"
         >
-        Tell Me About Your Vision
+          Tell Me About Your Vision
         </h2>
 
-
         <p className="text-lg text-[#cbebe5]/80 mb-10">
-          Ready to bring your vision to life through brand‑driven web, 3D experiences, or AR activations? Let&apos;s create something unforgettable together.
+          Ready to bring your vision to life through brand-driven web, 3D experiences, or AR activations? Let&apos;s create something unforgettable together.
         </p>
 
-        {/* Email CTA */}
         <div className="mb-10">
           <Button
             asChild
@@ -57,7 +53,6 @@ export function ContactSection() {
           </Button>
         </div>
 
-        {/* Social Links */}
         <div className="flex items-center justify-center gap-4">
           {socialLinks.map((social) => (
             <Link

@@ -16,9 +16,9 @@ export const sectors: readonly SectorDef[] = [
 export const defaultSettings: EngineDefaults = {
   language: "EN" as Language,
   spectrum: "COLOR" as SpectrumMode,
-  snapDuration: 600,
-  snapDurationReduced: 150,
-  idleScrollMs: 120,
+  snapDuration: 950,
+  snapDurationReduced: 240,
+  idleScrollMs: 320,
   hudIdleDelayMs: 4500,
   hudActiveOpacity: 1,
   hudIdleOpacity: 0.5,

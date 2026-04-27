@@ -8,10 +8,9 @@ export function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative pt-32 pb-24"
+      className="relative min-h-[140svh] pt-40 pb-40"
       style={{ position: "relative" }}
     >
-      
       {/* DISCONNECTED: Animated Triangle Background Element */}
       {/* 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -60,7 +59,7 @@ export function HeroSection() {
       </div>
       */}
 
-      <div className="relative z-10 w-full max-w-[1320px] mx-auto px-6 flex flex-col items-center justify-center">
+      <div className="relative z-10 w-full max-w-[1320px] mx-auto px-6 flex flex-col items-center justify-center min-h-[60svh]">
         {/* DISCONNECTED: PNG Logo */}
         {/*
         <div className="mb-4 md:mb-6">
@@ -84,7 +83,6 @@ export function HeroSection() {
           BRAND, WEB & AR
         </p>
         */}
-
 
         {/* DISCONNECTED: 3D Hero Block Placeholder */}
         {/*
@@ -120,7 +118,6 @@ export function HeroSection() {
          Crafting unforgettable experiences in the digital realm.
         </p>
         */}
-
 
         {/* DISCONNECTED: CTA Button */}
         {/*

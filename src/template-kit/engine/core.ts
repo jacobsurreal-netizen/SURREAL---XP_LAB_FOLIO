@@ -27,8 +27,10 @@ import {
 
 // ── helpers ─────────────────────────────────────────────────
 
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+const SNAP_DEAD_ZONE_PROGRESS = 0.035
+
+function easeInOutSine(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2
 }
 
 function nearestDetentIndex(progress: number): number {
@@ -260,11 +262,15 @@ class Engine {
     if (max <= 0) return
 
     const startScroll = window.scrollY
-    const targetScroll = sectors[targetIndex].detentProgress * max
+    const targetProgress = sectors[targetIndex].detentProgress
+    const targetScroll = targetProgress * max
     const delta = targetScroll - startScroll
 
-    if (Math.abs(delta) < 2) {
-      this._scrollProgress = sectors[targetIndex].detentProgress
+    const progressDelta = Math.abs(this._scrollProgress - targetProgress)
+
+    // Already close enough → mark snapped, do not animate
+    if (progressDelta <= SNAP_DEAD_ZONE_PROGRESS || Math.abs(delta) < 2) {
+      this._scrollProgress = targetProgress
       this._sectorIndex = targetIndex
       this._isSnapped = true
       this.notify()
@@ -278,7 +284,7 @@ class Engine {
     const animate = (now: number) => {
       const elapsed = now - startTime
       const t = Math.min(elapsed / duration, 1)
-      const eased = easeInOutCubic(t)
+      const eased = easeInOutSine(t)
       const currentScroll = startScroll + delta * eased
       window.scrollTo(0, currentScroll)
 
@@ -290,7 +296,7 @@ class Engine {
         this._snapRaf = requestAnimationFrame(animate)
       } else {
         window.scrollTo(0, targetScroll)
-        this._scrollProgress = sectors[targetIndex].detentProgress
+        this._scrollProgress = targetProgress
         this._sectorIndex = targetIndex
         this._isSnapping = false
         this._isSnapped = true
