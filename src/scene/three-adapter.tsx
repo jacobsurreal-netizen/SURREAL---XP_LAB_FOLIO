@@ -47,9 +47,7 @@ const spectrumRef = useRef(mode);
     progressRef.current = progress;
   }, [progress]);
 
-<<<<<<< HEAD
   // Parallax and Scroll Orbit tracking
-=======
   // Sync snapshot prop to ref for use in animation loop
   useEffect(() => {
     snapshotRef.current = snapshot;
@@ -98,7 +96,6 @@ const spectrumRef = useRef(mode);
 }, [mode]);
 
   // Parallax tracking
->>>>>>> feature/hud-orchestration
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedPointerRef = useRef({ x: 0, y: 0 });
   const smoothedOrbitRef = useRef(0);
