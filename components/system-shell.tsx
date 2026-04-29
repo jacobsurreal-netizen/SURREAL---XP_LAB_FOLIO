@@ -12,6 +12,7 @@ import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { CameraDebugHUD } from "@/src/scene/camera/camera-debug-hud"
 import { HudSkeleton } from "@/src/hud/hud-skeleton"
+import { SdiOverlay } from "@/src/sdi/sdi-overlay"
 
 interface SystemShellProps {
   children: React.ReactNode
@@ -186,6 +187,8 @@ export function SystemShell({ children }: SystemShellProps) {
 
         {/* Layer 35: HUD runtime bridge — temporary during migration */}
         <HudSkeleton mode={mode} />
+        {/* Layer 90: SDI debug overlay */}
+        <SdiOverlay />
       </div>
 
       {/* Scrollable Content */}
