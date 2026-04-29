@@ -1,22 +1,25 @@
-'use client';
+"use client"
 
-import React from 'react';
-import { HudParallax, HUD_MODES } from './index';
-import { useSpectrumMode } from "@/hooks/use-spectrum-mode";
+import React from "react"
+import { HudParallax, HUD_MODES } from "./index"
+import type { SpectrumMode } from "@/hooks/use-spectrum-mode"
 import { useReticleState } from "./reticle/hooks/useReticleState"
 import { ReticleController } from "./reticle/ReticleController"
 
-export function HudSkeleton({ children }: { children?: React.ReactNode }) {
-  const { mode } = useSpectrumMode();
+interface HudSkeletonProps {
+  children?: React.ReactNode
+  mode: SpectrumMode
+}
 
-const hudMode =
-  mode === "IR"
-    ? HUD_MODES.IR
-    : mode === "SCAN"
-    ? HUD_MODES.SCAN
-    : HUD_MODES.NORMAL;
+export function HudSkeleton({ children, mode }: HudSkeletonProps) {
+  const hudMode =
+    mode === "IR"
+      ? HUD_MODES.IR
+      : mode === "SCAN"
+        ? HUD_MODES.SCAN
+        : HUD_MODES.NORMAL
 
-const reticle = useReticleState();
+  const reticle = useReticleState(mode)
 
   return (
     <>
@@ -24,10 +27,8 @@ const reticle = useReticleState();
 
       <div className="pointer-events-none fixed inset-0 z-30">
         <HudParallax mode={hudMode} />
-
         <ReticleController presentation={reticle} />
-
       </div>
     </>
-  );
+  )
 }

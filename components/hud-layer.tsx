@@ -47,7 +47,7 @@ export function HUDLayer({
 }: HUDLayerProps) {
 
 
-const reticle = useReticleState()
+const reticle = useReticleState(spectrumMode)
 
 const microcopy = resolveMicrocopy({
   mode: reticle.mode,
