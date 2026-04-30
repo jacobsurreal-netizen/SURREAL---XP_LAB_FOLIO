@@ -10,6 +10,7 @@ import { mapSnapshotToOrbit } from './camera/scroll-camera-bridge';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { createPointerTracker } from './input/pointer-tracker';
 import { engine } from '../template-kit/engine';
 
 interface ThreeRuntimeAdapterProps {
@@ -120,8 +121,6 @@ export function ThreeRuntimeAdapter({
 }, [mode]);
 
   // Parallax tracking
-  const pointerRef = useRef({ x: 0, y: 0 });
-  const smoothedPointerRef = useRef({ x: 0, y: 0 });
   const smoothedOrbitRef = useRef(0);
 
   let orbit: OrbitController | null = null;
@@ -129,6 +128,8 @@ export function ThreeRuntimeAdapter({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const pointerTracker = createPointerTracker(container);
+pointerTracker.attach();
 
     // scene, camera, renderer setup
     const scene = new THREE.Scene();
@@ -274,18 +275,18 @@ export function ThreeRuntimeAdapter({
         const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
 
         // Smoothed pointer parallax
-        const lerpFactor = 0.065;
-        smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
-        smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
+        const smoothedPointer = pointerTracker.update(0.065);
+        smoothedPointer.x
+        smoothedPointer.y
 
         // Compose: orbit base + additive offsets
         orbit.update(camera, {
-          dx: smoothedPointerRef.current.x * 0.1,
-          dy: breathY + smoothedPointerRef.current.y * 0.05,
-          dz: breathZ,
-          lookBiasX: smoothedPointerRef.current.x * 0.02 + scroll.lookBiasX * baseRadius,
-          lookBiasY: smoothedPointerRef.current.y * 0.01 + scroll.lookBiasY * baseRadius,
-        });
+        dx: smoothedPointer.x * 0.1,
+        dy: breathY + smoothedPointer.y * 0.05,
+        dz: breathZ,
+        lookBiasX: smoothedPointer.x * 0.02 + scroll.lookBiasX * baseRadius,
+        lookBiasY: smoothedPointer.y * 0.01 + scroll.lookBiasY * baseRadius,
+      });
       }
 
       if (composerRef.current) {
@@ -315,33 +316,12 @@ export function ThreeRuntimeAdapter({
     };
     window.addEventListener('resize', onResize);
 
-    // Pointer parallax tracking
-    const onMouseMove = (event: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
-      const localX = (event.clientX - rect.left) / rect.width;
-      const localY = (event.clientY - rect.top) / rect.height;
-
-      const targetX = localX * 2 - 1;
-      const targetY = -(localY * 2 - 1);
-
-      pointerRef.current.x = Math.max(-0.45, Math.min(0.45, targetX));
-      pointerRef.current.y = Math.max(-0.30, Math.min(0.30, targetY));
-    };
-
-    const onMouseLeave = () => {
-      pointerRef.current.x = 0;
-      pointerRef.current.y = 0;
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('mouseleave', onMouseLeave);
 
     // cleanup
     return () => {
       if (animationId.current) cancelAnimationFrame(animationId.current);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('mousemove', onMouseMove);
-      container.removeEventListener('mouseleave', onMouseLeave);
+      pointerTracker.dispose();
 
       heroAssetRef.current = null;
 
