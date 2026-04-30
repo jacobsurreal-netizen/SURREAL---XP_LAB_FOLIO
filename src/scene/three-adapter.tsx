@@ -235,69 +235,68 @@ pointerTracker.attach();
         console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
       });
 
-    const clock = new THREE.Clock();
+const clock = new THREE.Clock();
 
-    // animation loop
-    const animate = () => {
-      const delta = clock.getDelta();
+// animation loop
+const updatePhase = (delta: number, time: number) => {
+  // Traverse scene for update hooks
+  scene.traverse((object) => {
+    const update = (object.userData as { update?: (delta: number) => void }).update;
+    if (typeof update === 'function') {
+      update(delta);
+    }
+  });
 
-      // Traverse scene for update hooks
-      scene.traverse((object) => {
-        const update = (object.userData as { update?: (delta: number) => void }).update;
-        if (typeof update === 'function') {
-          update(delta);
-        }
-      });
+  // Orbit controller update
+  if (orbit) {
+    const maxDim = (camera.userData.maxDim as number) ?? 1;
+    const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
 
-      // Orbit controller update
-      if (orbit) {
-        const time = clock.elapsedTime;
-        const maxDim = (camera.userData.maxDim as number) ?? 1;
-        const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
+    const scroll = mapSnapshotToOrbit(snapshotRef.current, progressRef.current);
+    orbit.setAzimuth(scroll.azimuth);
 
-        // Snapshot-aware bridge → orbit offsets + pose
-        const scroll = mapSnapshotToOrbit(snapshotRef.current, progressRef.current);
-        orbit.setAzimuth(scroll.azimuth);
+    const elevationRad = THREE.MathUtils.degToRad(scroll.elevationDeg);
+    const elevationHeight = Math.tan(elevationRad) * baseRadius;
+    orbit.setHeight(scroll.height + elevationHeight);
 
-        // Elevation: convert degrees to height offset via tan(el) * radius
-        const elevationRad = THREE.MathUtils.degToRad(scroll.elevationDeg);
-        const elevationHeight = Math.tan(elevationRad) * baseRadius;
-        orbit.setHeight(scroll.height + elevationHeight);
+    orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
 
-        // Radius: apply proportional bias from anchor pose
-        orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
+    orbit.tick(delta);
 
-        // Smooth orbit motion toward current targets
-        orbit.tick(delta);
+    const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
+    const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
 
-        // Ultra-subtle breathing offsets
-        const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
-        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
+    const smoothedPointer = pointerTracker.update(0.065);
 
-        // Smoothed pointer parallax
-        const smoothedPointer = pointerTracker.update(0.065);
-        smoothedPointer.x
-        smoothedPointer.y
+    orbit.update(camera, {
+      dx: smoothedPointer.x * 0.1,
+      dy: breathY + smoothedPointer.y * 0.05,
+      dz: breathZ,
+      lookBiasX: smoothedPointer.x * 0.02 + scroll.lookBiasX * baseRadius,
+      lookBiasY: smoothedPointer.y * 0.01 + scroll.lookBiasY * baseRadius,
+    });
+  }
+};
 
-        // Compose: orbit base + additive offsets
-        orbit.update(camera, {
-        dx: smoothedPointer.x * 0.1,
-        dy: breathY + smoothedPointer.y * 0.05,
-        dz: breathZ,
-        lookBiasX: smoothedPointer.x * 0.02 + scroll.lookBiasX * baseRadius,
-        lookBiasY: smoothedPointer.y * 0.01 + scroll.lookBiasY * baseRadius,
-      });
-      }
+const renderPhase = () => {
+  if (composerRef.current) {
+    composerRef.current.render();
+  } else {
+    renderer.render(scene, camera);
+  }
+};
 
-      if (composerRef.current) {
-        composerRef.current.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+const animate = () => {
+  const delta = clock.getDelta();
+  const time = clock.elapsedTime;
 
-      animationId.current = requestAnimationFrame(animate);
-    };
-    animate();
+  updatePhase(delta, time);
+  renderPhase();
+
+  animationId.current = requestAnimationFrame(animate);
+};
+
+animate();
 
     // resize handler
     const onResize = () => {
