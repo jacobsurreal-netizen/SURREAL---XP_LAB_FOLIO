@@ -11,7 +11,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { createPointerTracker } from './input/pointer-tracker';
-import { engine } from '../template-kit/engine';
+
 
 interface ThreeRuntimeAdapterProps {
   progress?: number
