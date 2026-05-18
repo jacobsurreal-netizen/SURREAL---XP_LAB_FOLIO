@@ -3,17 +3,48 @@
 import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
+import { ReconHUD } from "./recon-hud"
+import { useEffect, useState } from "react"
 
 interface ReconShellProps {
   children: React.ReactNode
 }
 
 export function ReconShell({ children }: ReconShellProps) {
-  // Hardcoded initial state for the first safe step
+  const [progress, setProgress] = useState(0)
+  
+  useEffect(() => {
+    let ticking = false
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+          const currentScroll = window.scrollY
+          const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0
+          setProgress(newProgress)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    // Initial call
+    handleScroll()
+
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   const mode = "COLOR"
-  const sectorIndex = 0
-  const sectorName = "OBSERVATION DECK"
-  const progress = 0
+  
+  // Map progress (0 -> 1) to exactly 3 sectors (0, 1, 2)
+  let sectorIndex = 0
+  if (progress >= 0.333 && progress < 0.666) sectorIndex = 1
+  if (progress >= 0.666) sectorIndex = 2
+
+  const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"]
+  const sectorName = SECTOR_NAMES[sectorIndex]
 
   return (
     <>
@@ -38,29 +69,8 @@ export function ReconShell({ children }: ReconShellProps) {
           />
         </div>
 
-        {/* Layer 30: Simple Placeholder HUD */}
-        <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <span
-              className="font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.2em] select-none opacity-20"
-              style={{ color: "var(--hud-accent-dim, rgba(160, 130, 210, 0.55))" }}
-            >
-              [ RECON MODE ]
-            </span>
-            <span
-              className="font-heading text-[clamp(1.5rem,4vw,3rem)] font-bold leading-none tracking-[0.2em] select-none opacity-40"
-              style={{ color: "var(--hud-accent, rgba(180, 120, 255, 0.95))" }}
-            >
-              [ {sectorName} ]
-            </span>
-            <span
-              className="font-mono text-sm tracking-[0.2em] select-none opacity-50 mt-8"
-              style={{ color: "var(--hud-text, rgba(205, 170, 255, 0.82))" }}
-            >
-              [ SCROLL FLOW PENDING ]
-            </span>
-          </div>
-        </div>
+        {/* Layer 30: Recon HUD */}
+        <ReconHUD sectorIndex={sectorIndex} />
         
         {/* Layer 99: Audio Observer (Non-visual) */}
         <SoundLayer />
