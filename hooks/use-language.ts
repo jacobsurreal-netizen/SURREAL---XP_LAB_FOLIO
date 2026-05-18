@@ -21,6 +21,9 @@ export type DictKey =
   | "TRANSMISSION_SENT"
   | "CHANNEL_OPEN"
   | "ANOMALY_DETECTED"
+  | "SOUND"
+  | "SOUND_ON"
+  | "SOUND_OFF"
 
 /**
  * App-friendly wrapper around the template-kit engine language hook.

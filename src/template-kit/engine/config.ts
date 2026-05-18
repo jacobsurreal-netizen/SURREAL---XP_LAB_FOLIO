@@ -13,7 +13,7 @@ export const sectors: readonly SectorDef[] = [
   { name: "CTA", detentProgress: 0.75, iconKey: "M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7l3-7z" },
 ] as const
 
-export const defaultSettings: EngineDefaults = {
+  export const defaultSettings: EngineDefaults = {
   language: "EN" as Language,
   spectrum: "COLOR" as SpectrumMode,
   snapDuration: 950,
@@ -25,6 +25,7 @@ export const defaultSettings: EngineDefaults = {
   hudCtaActiveOpacity: 0.6,
   hudCtaIdleOpacity: 0.25,
   telemetryThrottleMs: 60, // ~16 fps
+  soundEnabled: false,
 }
 
 export const storageNamespace = "jacob-surreal"
@@ -91,4 +92,7 @@ export const dictionary: Record<string, Record<Language, string>> = {
   GO_TO_SECTOR: { EN: "Go to", CS: "P\u0159ej\u00EDt na", DE: "Gehe zu", JP: "\u79FB\u52D5" },
   SWITCH_SPECTRUM: { EN: "Switch spectrum mode", CS: "P\u0159epnout spektr\u00E1ln\u00ED m\u00F3d", DE: "Spektralmodus wechseln", JP: "\u30B9\u30DA\u30AF\u30C8\u30EB\u30E2\u30FC\u30C9\u5207\u66FF" },
   CYCLE_LANG: { EN: "Cycle language", CS: "P\u0159epnout jazyk", DE: "Sprache wechseln", JP: "\u8A00\u8A9E\u5207\u66FF" },
+  SOUND: { EN: "SOUND", CS: "ZVUK", DE: "TON", JP: "\u97F3" },
+  SOUND_ON: { EN: "SOUND ON", CS: "ZVUK ZAP", DE: "TON AN", JP: "\u97F3\u30AA\u30F3" },
+  SOUND_OFF: { EN: "SOUND OFF", CS: "ZVUK VYP", DE: "TON AUS", JP: "\u97F3\u30AA\u30D5\u30D5" },
 }

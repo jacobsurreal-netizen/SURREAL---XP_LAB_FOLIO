@@ -1,8 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-
-import { useSpectrumMode } from "@/hooks/use-spectrum-mode"
 import { useOrbitSector } from "@/hooks/use-orbit-sector"
 import { usePointerPresence } from "@/hooks/use-pointer-presence"
 import { useMouseParallax } from "../../hooks/use-mouse-parallax"
@@ -14,8 +12,9 @@ import type {
 } from "../Reticle.types"
 import { resolveReticleState } from "../utils/resolveReticleState"
 
-export function useReticleState(): ReticlePresentation {
-  const { mode } = useSpectrumMode()
+import type { SpectrumMode } from "@/hooks/use-spectrum-mode"
+
+export function useReticleState(mode: SpectrumMode): ReticlePresentation {
   const { sectorName, isSnapped } = useOrbitSector()
   const { isPointerActive } = usePointerPresence()
   const { offset } = useMouseParallax(0.05)

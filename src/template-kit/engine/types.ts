@@ -51,6 +51,7 @@ export interface EngineDefaults {
   hudCtaActiveOpacity: number
   hudCtaIdleOpacity: number
   telemetryThrottleMs: number
+  soundEnabled: boolean
 }
 
 // ── Command events ──────────────────────────────────────────
@@ -62,6 +63,7 @@ export type CommandType =
   | "COMMAND/SET_SPECTRUM"
   | "COMMAND/SET_LANGUAGE"
   | "COMMAND/SET_STATE"
+  | "COMMAND/TOGGLE_SOUND"
 
 export interface CommandEvent {
   type: CommandType
@@ -97,4 +99,8 @@ export interface EngineSnapshot {
   isSnapped: boolean
   spectrum: SpectrumMode
   language: Language
+  soundEnabled: boolean
 }
+
+// Sound profiles (M1 only)
+export type SoundProfile = "VOID_PROFILE" | "EXPLORATION_PROFILE" | "CTA_PROFILE" | "IR_PROFILE"

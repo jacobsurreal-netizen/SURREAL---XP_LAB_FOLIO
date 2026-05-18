@@ -10,7 +10,8 @@ import { mapSnapshotToOrbit } from './camera/scroll-camera-bridge';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { engine } from '../template-kit/engine';
+import { createPointerTracker } from './input/pointer-tracker';
+
 
 interface ThreeRuntimeAdapterProps {
   progress?: number
@@ -120,8 +121,6 @@ export function ThreeRuntimeAdapter({
 }, [mode]);
 
   // Parallax tracking
-  const pointerRef = useRef({ x: 0, y: 0 });
-  const smoothedPointerRef = useRef({ x: 0, y: 0 });
   const smoothedOrbitRef = useRef(0);
 
   let orbit: OrbitController | null = null;
@@ -129,6 +128,8 @@ export function ThreeRuntimeAdapter({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const pointerTracker = createPointerTracker(container);
+pointerTracker.attach();
 
     // scene, camera, renderer setup
     const scene = new THREE.Scene();
@@ -234,69 +235,68 @@ export function ThreeRuntimeAdapter({
         console.error('[ThreeRuntimeAdapter] Hero asset attachment failed', error);
       });
 
-    const clock = new THREE.Clock();
+const clock = new THREE.Clock();
 
-    // animation loop
-    const animate = () => {
-      const delta = clock.getDelta();
+// animation loop
+const updatePhase = (delta: number, time: number) => {
+  // Traverse scene for update hooks
+  scene.traverse((object) => {
+    const update = (object.userData as { update?: (delta: number) => void }).update;
+    if (typeof update === 'function') {
+      update(delta);
+    }
+  });
 
-      // Traverse scene for update hooks
-      scene.traverse((object) => {
-        const update = (object.userData as { update?: (delta: number) => void }).update;
-        if (typeof update === 'function') {
-          update(delta);
-        }
-      });
+  // Orbit controller update
+  if (orbit) {
+    const maxDim = (camera.userData.maxDim as number) ?? 1;
+    const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
 
-      // Orbit controller update
-      if (orbit) {
-        const time = clock.elapsedTime;
-        const maxDim = (camera.userData.maxDim as number) ?? 1;
-        const baseRadius = (camera.userData.orbitDistance as number) ?? orbit.radius;
+    const scroll = mapSnapshotToOrbit(snapshotRef.current, progressRef.current);
+    orbit.setAzimuth(scroll.azimuth);
 
-        // Snapshot-aware bridge → orbit offsets + pose
-        const scroll = mapSnapshotToOrbit(snapshotRef.current, progressRef.current);
-        orbit.setAzimuth(scroll.azimuth);
+    const elevationRad = THREE.MathUtils.degToRad(scroll.elevationDeg);
+    const elevationHeight = Math.tan(elevationRad) * baseRadius;
+    orbit.setHeight(scroll.height + elevationHeight);
 
-        // Elevation: convert degrees to height offset via tan(el) * radius
-        const elevationRad = THREE.MathUtils.degToRad(scroll.elevationDeg);
-        const elevationHeight = Math.tan(elevationRad) * baseRadius;
-        orbit.setHeight(scroll.height + elevationHeight);
+    orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
 
-        // Radius: apply proportional bias from anchor pose
-        orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
+    orbit.tick(delta);
 
-        // Smooth orbit motion toward current targets
-        orbit.tick(delta);
+    const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
+    const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
 
-        // Ultra-subtle breathing offsets
-        const breathY = Math.sin(time * 0.45) * (maxDim * 0.02);
-        const breathZ = Math.cos(time * 0.38) * (maxDim * 0.015);
+    const smoothedPointer = pointerTracker.update(0.065);
 
-        // Smoothed pointer parallax
-        const lerpFactor = 0.065;
-        smoothedPointerRef.current.x += (pointerRef.current.x - smoothedPointerRef.current.x) * lerpFactor;
-        smoothedPointerRef.current.y += (pointerRef.current.y - smoothedPointerRef.current.y) * lerpFactor;
+    orbit.update(camera, {
+      dx: smoothedPointer.x * 0.1,
+      dy: breathY + smoothedPointer.y * 0.05,
+      dz: breathZ,
+      lookBiasX: smoothedPointer.x * 0.02 + scroll.lookBiasX * baseRadius,
+      lookBiasY: smoothedPointer.y * 0.01 + scroll.lookBiasY * baseRadius,
+    });
+  }
+};
 
-        // Compose: orbit base + additive offsets
-        orbit.update(camera, {
-          dx: smoothedPointerRef.current.x * 0.1,
-          dy: breathY + smoothedPointerRef.current.y * 0.05,
-          dz: breathZ,
-          lookBiasX: smoothedPointerRef.current.x * 0.02 + scroll.lookBiasX * baseRadius,
-          lookBiasY: smoothedPointerRef.current.y * 0.01 + scroll.lookBiasY * baseRadius,
-        });
-      }
+const renderPhase = () => {
+  if (composerRef.current) {
+    composerRef.current.render();
+  } else {
+    renderer.render(scene, camera);
+  }
+};
 
-      if (composerRef.current) {
-        composerRef.current.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+const animate = () => {
+  const delta = clock.getDelta();
+  const time = clock.elapsedTime;
 
-      animationId.current = requestAnimationFrame(animate);
-    };
-    animate();
+  updatePhase(delta, time);
+  renderPhase();
+
+  animationId.current = requestAnimationFrame(animate);
+};
+
+animate();
 
     // resize handler
     const onResize = () => {
@@ -315,33 +315,12 @@ export function ThreeRuntimeAdapter({
     };
     window.addEventListener('resize', onResize);
 
-    // Pointer parallax tracking
-    const onMouseMove = (event: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
-      const localX = (event.clientX - rect.left) / rect.width;
-      const localY = (event.clientY - rect.top) / rect.height;
-
-      const targetX = localX * 2 - 1;
-      const targetY = -(localY * 2 - 1);
-
-      pointerRef.current.x = Math.max(-0.45, Math.min(0.45, targetX));
-      pointerRef.current.y = Math.max(-0.30, Math.min(0.30, targetY));
-    };
-
-    const onMouseLeave = () => {
-      pointerRef.current.x = 0;
-      pointerRef.current.y = 0;
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('mouseleave', onMouseLeave);
 
     // cleanup
     return () => {
       if (animationId.current) cancelAnimationFrame(animationId.current);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('mousemove', onMouseMove);
-      container.removeEventListener('mouseleave', onMouseLeave);
+      pointerTracker.dispose();
 
       heroAssetRef.current = null;
 
