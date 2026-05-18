@@ -12,7 +12,7 @@ interface ReconShellProps {
 
 export function ReconShell({ children }: ReconShellProps) {
   const [progress, setProgress] = useState(0)
-  
+
   useEffect(() => {
     let ticking = false
 
@@ -37,7 +37,7 @@ export function ReconShell({ children }: ReconShellProps) {
   }, [])
 
   const mode = "COLOR"
-  
+
   // Map progress (0 -> 1) to exactly 3 sectors (0, 1, 2)
   let sectorIndex = 0
   if (progress >= 0.333 && progress < 0.666) sectorIndex = 1
@@ -49,7 +49,7 @@ export function ReconShell({ children }: ReconShellProps) {
   return (
     <>
       {/* Fixed full-viewport shell */}
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden z-0 bg-black">
+      <div className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none">
         {/* Layer 0: World Foundation */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <WorldLayer progress={progress} sector={sectorName} mode={mode} />
@@ -71,13 +71,13 @@ export function ReconShell({ children }: ReconShellProps) {
 
         {/* Layer 30: Recon HUD */}
         <ReconHUD sectorIndex={sectorIndex} />
-        
+
         {/* Layer 99: Audio Observer (Non-visual) */}
         <SoundLayer />
       </div>
 
       {/* Scrollable Content (pending actual flow) */}
-      <div className="relative z-[100] w-full overflow-x-hidden min-h-screen">
+      <div className="relative z-0 w-full overflow-x-hidden min-h-screen pointer-events-none">
         {children}
       </div>
     </>

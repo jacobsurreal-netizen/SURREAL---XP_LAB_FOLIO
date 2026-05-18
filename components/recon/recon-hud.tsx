@@ -1,8 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 interface ReconHUDProps {
   sectorIndex: number
 }
+
+const RECON_AR_URL = "/recon/ar"
 
 const SECTOR_DATA = [
   {
@@ -22,8 +26,71 @@ const SECTOR_DATA = [
   },
 ]
 
+function clampSectorIndex(index: number) {
+  return Math.min(Math.max(0, index), 2)
+}
+
+interface GatewayModalProps {
+  open: boolean
+  onClose: () => void
+}
+
+function GatewayModal({ open, onClose }: GatewayModalProps) {
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm pointer-events-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-label="RECON AR transfer modal"
+    >
+      <div className="w-full max-w-md border border-cyan-300/30 bg-black/90 p-6 shadow-[0_0_40px_rgba(34,211,238,0.12)]">
+        <div className="mb-6 font-mono text-xs tracking-[0.25em] text-cyan-200/80">
+          [ TRANSFER SESSION TO MOBILE PROBE ]
+        </div>
+
+        <div className="mb-6 flex aspect-square w-full items-center justify-center border border-cyan-300/25 bg-cyan-300/5">
+          <div className="text-center font-mono text-xs tracking-[0.3em] text-cyan-100/60">
+            QR LINK PENDING
+          </div>
+        </div>
+
+        <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-cyan-100/70">
+          SCAN TO CONTINUE RECON PROCEDURE
+        </p>
+
+        <div className="flex items-center justify-between gap-4">
+          <a
+            href={RECON_AR_URL}
+            className="border border-cyan-300/40 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/10"
+          >
+            OPEN MOBILE SCANNER
+          </a>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="border border-cyan-300/20 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100/70 transition hover:bg-cyan-300/10 hover:text-cyan-100"
+          >
+            [ CLOSE ]
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ReconHUD({ sectorIndex }: ReconHUDProps) {
-  const data = SECTOR_DATA[Math.min(Math.max(0, sectorIndex), 2)]
+  const safeSectorIndex = clampSectorIndex(sectorIndex)
+  const data = SECTOR_DATA[safeSectorIndex]
+  const [isGatewayOpen, setIsGatewayOpen] = useState(false)
+
+  useEffect(() => {
+    if (safeSectorIndex !== 2) {
+      setIsGatewayOpen(false)
+    }
+  }, [safeSectorIndex])
 
   return (
     <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center">
@@ -46,7 +113,19 @@ export function ReconHUD({ sectorIndex }: ReconHUDProps) {
         >
           {data.line3}
         </span>
+
+        {safeSectorIndex === 2 && (
+          <button
+            type="button"
+            onClick={() => setIsGatewayOpen(true)}
+            className="pointer-events-auto mt-8 border border-cyan-300/40 px-5 py-3 font-mono text-xs tracking-[0.22em] text-cyan-100 transition hover:bg-cyan-300/10"
+          >
+            [ REQUEST_AR_LINK ]
+          </button>
+        )}
       </div>
+
+      <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />
     </div>
   )
 }
