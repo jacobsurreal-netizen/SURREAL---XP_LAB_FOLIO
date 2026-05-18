@@ -103,6 +103,7 @@ class Engine {
   private _isSnapped = true
   private _spectrum: SpectrumMode = defaultSettings.spectrum
   private _language: Language = defaultSettings.language
+  private _soundEnabled: boolean = defaultSettings.soundEnabled
 
   // ---- internal refs ----
   private _idleTimer: ReturnType<typeof setTimeout> | null = null
@@ -124,6 +125,7 @@ class Engine {
     isSnapped: this._isSnapped,
     spectrum: this._spectrum,
     language: this._language,
+    soundEnabled: this._soundEnabled,
   }
 
   // ========================================================
@@ -199,6 +201,10 @@ class Engine {
         break
       case "COMMAND/SET_STATE":
         this._systemState = payload as SystemState
+        this.notify()
+        break
+      case "COMMAND/TOGGLE_SOUND":
+        this._soundEnabled = !this._soundEnabled
         this.notify()
         break
     }
@@ -401,6 +407,7 @@ class Engine {
       isSnapped: this._isSnapped,
       spectrum: this._spectrum,
       language: this._language,
+      soundEnabled: this._soundEnabled,
     }
 
     for (const cb of this._snapshotListeners) cb()

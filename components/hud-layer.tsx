@@ -15,6 +15,8 @@ interface HUDLayerProps {
   lang: Language
   onCycleLang: () => void
   t: (key: string) => string
+  soundEnabled: boolean
+  onToggleSound: () => void
 }
 
 const SECTORS = [
@@ -44,6 +46,8 @@ export function HUDLayer({
   lang,
   onCycleLang,
   t,
+  soundEnabled,
+  onToggleSound,
 }: HUDLayerProps) {
 
 
@@ -57,24 +61,35 @@ const microcopy = resolveMicrocopy({
 
   return (
     <div
-  className="absolute inset-0 z-30 transition-all duration-300"
-  style={{
-    filter: spectrumMode === "SCAN" ? "contrast(1.3) brightness(1.1)" : "none",
-  }}
-  role="region" aria-label="HUD Overlay">
+       className="fixed inset-0 z-30 pointer-events-none transition-all duration-300"
+      style={{
+        filter: spectrumMode === "SCAN" ? "contrast(1.3) brightness(1.1)" : "none",
+      }}
+      role="region" aria-label="HUD Overlay"
+    >
       {/* ---- TOP-LEFT TELEMETRY ---- */}
-      <div className="absolute top-5 left-5 md:top-8 md:left-8 pointer-events-none select-none">
+      <div className="absolute top-5 left-5 md:top-8 md:left-8 select-none">
         <div className="flex flex-col gap-0.5">
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
-           style={{
-  color:
-    spectrumMode === "SCAN"
-      ? "rgba(200,150,255,0.9)"
-      : "var(--hud-ink)",
-}} 
+            style={{
+              color:
+                spectrumMode === "SCAN"
+                  ? "rgba(200,150,255,0.9)"
+                  : "var(--hud-ink)",
+            }}
           >
             {`SYSTEM_LINK: ${microcopy.primary}`}
+          </span>
+          <span
+            className="font-mono text-[10px] tracking-[0.25em] leading-tight"
+            style={{ color: "var(--hud-ink)", cursor: "pointer" }}
+            onClick={onToggleSound}
+            role="button"
+            aria-pressed={soundEnabled}
+            tabIndex={0}
+          >
+            {soundEnabled ? t("SOUND_ON") : t("SOUND_OFF")}
           </span>
           <span
             className="font-mono text-[10px] tracking-[0.25em] leading-tight"
