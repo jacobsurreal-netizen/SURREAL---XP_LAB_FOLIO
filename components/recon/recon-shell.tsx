@@ -2,6 +2,7 @@
 
 import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
+import { SoundLayer } from "@/components/sound-layer"
 
 interface ReconShellProps {
   children: React.ReactNode
@@ -60,6 +61,9 @@ export function ReconShell({ children }: ReconShellProps) {
             </span>
           </div>
         </div>
+        
+        {/* Layer 99: Audio Observer (Non-visual) */}
+        <SoundLayer />
       </div>
 
       {/* Scrollable Content (pending actual flow) */}
