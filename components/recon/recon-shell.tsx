@@ -4,7 +4,6 @@ import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
 import { ReconHUD } from "./recon-hud"
-import { ReconMobileGateway } from "./recon-mobile-gateway"
 import { useEffect, useState } from "react"
 
 interface ReconShellProps {
@@ -29,27 +28,25 @@ export function ReconShell({ children }: ReconShellProps) {
   }, [])
 
   useEffect(() => {
-    if (!isMobile) {
-      let ticking = false
-      const handleScroll = () => {
-        if (!ticking) {
-          window.requestAnimationFrame(() => {
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-            const currentScroll = window.scrollY
-            const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0
-            setProgress(newProgress)
-            ticking = false
-          })
-          ticking = true
-        }
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+          const currentScroll = window.scrollY
+          const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0
+          setProgress(newProgress)
+          ticking = false
+        })
+        ticking = true
       }
-      window.addEventListener("scroll", handleScroll, { passive: true })
-      handleScroll()
-      return () => window.removeEventListener("scroll", handleScroll)
     }
-  }, [isMobile])
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
-  // Desktop sector logic
+  // Desktop/mobile sector logic
   const mode = "COLOR"
   let sectorIndex = 0
   if (progress >= 0.333 && progress < 0.666) sectorIndex = 1
@@ -57,12 +54,6 @@ export function ReconShell({ children }: ReconShellProps) {
   const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"]
   const sectorName = SECTOR_NAMES[sectorIndex]
 
-  // Mobile: show gateway UI only after mount
-  if (mounted && isMobile) {
-    return <ReconMobileGateway />
-  }
-
-  // Desktop: unchanged
   return (
     <>
       <div className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none">
@@ -81,7 +72,7 @@ export function ReconShell({ children }: ReconShellProps) {
             }}
           />
         </div>
-        <ReconHUD sectorIndex={sectorIndex} />
+        <ReconHUD sectorIndex={sectorIndex} isMobile={isMobile} />
         <SoundLayer />
       </div>
       <div className="relative z-0 w-full overflow-x-hidden min-h-screen pointer-events-none">

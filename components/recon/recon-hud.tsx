@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 interface ReconHUDProps {
   sectorIndex: number
+  isMobile?: boolean
 }
 
 const RECON_AR_URL = "/recon/ar"
@@ -81,7 +82,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
   )
 }
 
-export function ReconHUD({ sectorIndex }: ReconHUDProps) {
+export function ReconHUD({ sectorIndex, isMobile }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
   const data = SECTOR_DATA[safeSectorIndex]
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
@@ -92,40 +93,48 @@ export function ReconHUD({ sectorIndex }: ReconHUDProps) {
     }
   }, [safeSectorIndex])
 
+  // Responsive text classes
+  const heading1 = isMobile
+    ? "font-heading text-lg font-bold leading-none tracking-[0.15em] select-none opacity-40 text-center"
+    : "font-heading text-[clamp(1.5rem,5vw,4rem)] font-bold leading-none tracking-[0.2em] select-none opacity-40 text-center"
+  const heading2 = isMobile
+    ? "font-heading text-2xl font-bold leading-none tracking-[0.15em] select-none opacity-60 text-center"
+    : "font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.2em] select-none opacity-60 text-center"
+  const subtext = isMobile
+    ? "font-mono text-xs tracking-[0.15em] select-none opacity-50 mt-4 text-center"
+    : "font-mono text-[clamp(0.8rem,2vw,1.5rem)] tracking-[0.2em] select-none opacity-50 mt-8 text-center"
+  const ctaBtn = isMobile
+    ? "pointer-events-auto mt-6 border border-cyan-300/40 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/10"
+    : "pointer-events-auto mt-8 border border-cyan-300/40 px-5 py-3 font-mono text-xs tracking-[0.22em] text-cyan-100 transition hover:bg-cyan-300/10"
+
   return (
     <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center">
       <div className="flex flex-col items-center gap-4 transition-opacity duration-300">
-        <span
-          className="font-heading text-[clamp(1.5rem,5vw,4rem)] font-bold leading-none tracking-[0.2em] select-none opacity-40 text-center"
-          style={{ color: "var(--hud-accent-dim, rgba(160, 130, 210, 0.55))" }}
-        >
-          {data.line1}
-        </span>
-        <span
-          className="font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.2em] select-none opacity-60 text-center"
-          style={{ color: "var(--hud-accent, rgba(180, 120, 255, 0.95))" }}
-        >
-          {data.line2}
-        </span>
-        <span
-          className="font-mono text-[clamp(0.8rem,2vw,1.5rem)] tracking-[0.2em] select-none opacity-50 mt-8 text-center"
-          style={{ color: "var(--hud-text, rgba(205, 170, 255, 0.82))" }}
-        >
-          {data.line3}
-        </span>
-
+        <span className={heading1} style={{ color: "var(--hud-accent-dim, rgba(160, 130, 210, 0.55))" }}>{data.line1}</span>
+        <span className={heading2} style={{ color: "var(--hud-accent, rgba(180, 120, 255, 0.95))" }}>{data.line2}</span>
+        <span className={subtext} style={{ color: "var(--hud-text, rgba(205, 170, 255, 0.82))" }}>{data.line3}</span>
         {safeSectorIndex === 2 && (
-          <button
-            type="button"
-            onClick={() => setIsGatewayOpen(true)}
-            className="pointer-events-auto mt-8 border border-cyan-300/40 px-5 py-3 font-mono text-xs tracking-[0.22em] text-cyan-100 transition hover:bg-cyan-300/10"
-          >
-            [ REQUEST_AR_LINK ]
-          </button>
+          isMobile ? (
+            <a
+              href="/recon/ar"
+              className={ctaBtn}
+            >
+              [ ACTIVATE SCANNER ]
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsGatewayOpen(true)}
+              className={ctaBtn}
+            >
+              [ REQUEST_AR_LINK ]
+            </button>
+          )
         )}
       </div>
-
-      <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />
+      {!isMobile && (
+        <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />
+      )}
     </div>
   )
 }
