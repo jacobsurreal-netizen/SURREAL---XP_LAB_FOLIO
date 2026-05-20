@@ -4,6 +4,7 @@ import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
 import { ReconHUD } from "./recon-hud"
+import { ReconOpticalOverlay } from "./recon-optical-overlay"
 import { useEffect, useState } from "react"
 
 interface ReconShellProps {
@@ -72,6 +73,7 @@ export function ReconShell({ children }: ReconShellProps) {
             }}
           />
         </div>
+        <ReconOpticalOverlay />
         <ReconHUD sectorIndex={sectorIndex} isMobile={isMobile} />
         <SoundLayer />
       </div>
