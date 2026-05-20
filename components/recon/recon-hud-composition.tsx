@@ -38,11 +38,11 @@ function CompositionBrackets({ compact }: { compact?: boolean }) {
 }
 
 function TCenterMarker({ small }: { small?: boolean }) {
-  const size = small ? "w-[clamp(20px,5vmin,28px)]" : "w-[clamp(28px,6vmin,40px)]"
+  const size = small ? "w-[clamp(24px,6vmin,32px)]" : "w-[clamp(36px,7vmin,52px)]"
   return (
     <svg
       viewBox="0 0 40 40"
-      className={`${size} text-[color:var(--hud-accent)] opacity-25`}
+      className={`${size} text-[color:var(--hud-accent)] opacity-[0.38]`}
       aria-hidden="true"
     >
       <line x1="20" y1="0" x2="20" y2="15" stroke="currentColor" strokeWidth="1" />
@@ -57,7 +57,7 @@ function TCenterMarker({ small }: { small?: boolean }) {
 function DesktopFrame() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 hidden h-full w-full text-[color:var(--hud-accent)] opacity-[0.12] md:block"
+      className="pointer-events-none absolute inset-0 hidden h-full w-full text-[color:var(--hud-accent)] opacity-[0.17] md:block"
       preserveAspectRatio="none"
       viewBox="0 0 1000 1000"
       aria-hidden="true"
@@ -81,7 +81,7 @@ function DesktopFrame() {
 function MobileFrame() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 h-full w-full text-[color:var(--hud-accent)] opacity-[0.12] md:hidden"
+      className="pointer-events-none absolute inset-0 h-full w-full text-[color:var(--hud-accent)] opacity-[0.15] md:hidden"
       preserveAspectRatio="none"
       viewBox="0 0 400 800"
       aria-hidden="true"
@@ -175,13 +175,13 @@ function DesktopComposition({
         <TopStatusStrip sectorName={sectorName} progress={progress} />
       </div>
 
-      <div className="absolute left-4 top-1/2 w-44 -translate-y-1/2 space-y-4 lg:left-8 lg:w-52 lg:space-y-5">
-        <div className="relative p-3 lg:p-4">
+      <div className="absolute left-3 top-1/2 w-36 -translate-y-1/2 opacity-90 lg:left-6 lg:w-40">
+        <div className="relative p-2.5 lg:p-3">
           <CompositionBrackets />
-          <div className="mb-3 font-mono text-[8px] tracking-[0.28em] text-[color:var(--hud-text-dim)] lg:mb-4">
+          <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
             {panelTitle}
           </div>
-          <div className="space-y-3 lg:space-y-4">
+          <div className="space-y-2 lg:space-y-2.5">
             {METER_PLACEHOLDERS.map((meter) => (
               <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} />
             ))}
@@ -190,7 +190,7 @@ function DesktopComposition({
       </div>
 
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative flex h-[min(52vw,52vh)] w-[min(52vw,52vh)] max-h-[420px] max-w-[420px] items-center justify-center opacity-80">
+        <div className="relative flex h-[min(38vw,38vh)] w-[min(38vw,38vh)] max-h-[320px] max-w-[320px] items-center justify-center">
           <TCenterMarker />
         </div>
       </div>
@@ -209,15 +209,15 @@ function MobileComposition({
     <div className="pointer-events-none absolute inset-0 flex flex-col md:hidden" aria-hidden="true">
       <MobileFrame />
 
-      <div className="flex-shrink-0 px-4 pb-2 pt-5">
-        <div className="mb-2 text-center">
-          <div className="font-mono text-[6px] tracking-[0.28em] text-[color:var(--hud-text-dim)]">
+      <div className="flex-shrink-0 px-3 pb-1.5 pt-4">
+        <div className="mb-1.5 text-center">
+          <div className="font-mono text-[6px] tracking-[0.26em] text-[color:var(--hud-text-dim)] opacity-80">
             DEEP-SPACE RECON
           </div>
           <TopStatusStrip sectorName={sectorName} progress={progress} compact />
         </div>
 
-        <div className="relative p-3">
+        <div className="relative p-2.5 opacity-90">
           <CompositionBrackets compact />
           <div className="grid grid-cols-2 gap-3">
             <StaticMeterShell label="GRAVIMETRIC" width="62%" compact />

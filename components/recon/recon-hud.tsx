@@ -143,23 +143,64 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
     }
   }, [safeSectorIndex])
 
-  const heading1 = isMobile
-    ? "font-heading text-lg font-bold leading-none tracking-[0.22em] select-none text-center"
-    : "font-heading text-[clamp(1.5rem,5vw,4rem)] font-bold leading-none tracking-[0.28em] select-none text-center"
-  const heading2 = isMobile
-    ? "font-heading text-2xl font-bold leading-none tracking-[0.2em] select-none text-center"
-    : "font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.24em] select-none text-center"
-  const subtext = isMobile
-    ? "font-mono text-xs tracking-[0.2em] select-none text-center"
-    : "font-mono text-[clamp(0.8rem,2vw,1.5rem)] tracking-[0.24em] select-none text-center"
+  const line1Class =
+    "font-mono font-medium leading-tight tracking-[0.22em] select-none text-center uppercase text-[length:clamp(0.5rem,1.1vw,0.68rem)]"
+  const line2Class =
+    "recon-hud-primary-line font-mono font-semibold leading-snug tracking-[0.16em] select-none text-center uppercase text-[length:clamp(0.72rem,2vw,1.05rem)] max-w-[min(100%,20rem)]"
+  const line3Class =
+    "font-mono font-normal leading-tight tracking-[0.18em] select-none text-center uppercase text-[length:clamp(0.5rem,1.2vw,0.72rem)] opacity-90"
   const ctaBtn = isMobile
-    ? `pointer-events-auto relative ${hudActionBtn} mt-2`
-    : `pointer-events-auto relative ${hudActionBtn} mt-2 px-5 py-3 tracking-[0.22em]`
+    ? `pointer-events-auto relative ${hudActionBtn} mt-1`
+    : `pointer-events-auto relative ${hudActionBtn} mt-1.5 px-4 py-2 tracking-[0.2em]`
 
-  const panelPadding = isMobile ? "px-5 py-6" : "px-8 py-8"
-  const panelGap = isMobile ? "gap-3" : "gap-5"
+  const panelPadding = isMobile ? "px-3.5 py-3" : "px-5 py-4"
+  const panelGap = isMobile ? "gap-1.5" : "gap-2"
 
   return (
+    <>
+      <style>{`
+        @keyframes recon-hud-primary-bloom {
+          0%,
+          100% {
+            text-shadow:
+              0 0 6px color-mix(in srgb, var(--hud-glow) 45%, transparent),
+              0 0 1px color-mix(in srgb, var(--hud-accent) 30%, transparent);
+          }
+          50% {
+            text-shadow:
+              0 0 12px color-mix(in srgb, var(--hud-glow) 65%, transparent),
+              0 0 3px color-mix(in srgb, var(--hud-accent) 40%, transparent);
+          }
+        }
+
+        @keyframes recon-hud-primary-glitch {
+          0%,
+          96%,
+          100% {
+            transform: translate3d(0, 0, 0);
+          }
+          97% {
+            transform: translate3d(0.6px, 0, 0);
+          }
+          98% {
+            transform: translate3d(-0.6px, 0, 0);
+          }
+        }
+
+        .recon-hud-primary-line {
+          animation:
+            recon-hud-primary-bloom 5s ease-in-out infinite,
+            recon-hud-primary-glitch 9s steps(1, end) infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .recon-hud-primary-line {
+            animation: none;
+            text-shadow: 0 0 8px color-mix(in srgb, var(--hud-glow) 50%, transparent);
+          }
+        }
+      `}</style>
+
     <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center px-4">
       <ReconHudComposition
         sectorIndex={safeSectorIndex}
@@ -168,50 +209,35 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
         progress={progress}
       />
       <div
-        className={`relative z-10 flex max-w-[min(92vw,42rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] transition-opacity duration-300`}
+        className={`relative z-10 flex max-w-[min(88vw,22rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] bg-black/25 backdrop-blur-[2px] transition-opacity duration-300`}
         style={{
-          boxShadow: "0 0 48px color-mix(in srgb, var(--hud-glow) 28%, transparent)",
+          boxShadow:
+            "0 0 24px color-mix(in srgb, var(--hud-glow) 18%, transparent), inset 0 0 20px color-mix(in srgb, var(--hud-accent-dim) 25%, transparent)",
         }}
       >
         <HudCornerBrackets compact={isMobile} />
 
-        <span
-          className={heading1}
-          style={{
-            color: "var(--hud-text-dim)",
-            textShadow: "0 0 24px color-mix(in srgb, var(--hud-glow) 40%, transparent)",
-          }}
-        >
+        <span className={line1Class} style={{ color: "var(--hud-text-dim)" }}>
           {data.line1}
         </span>
 
-        {!isMobile && (
-          <div
-            className="hidden h-px w-16 md:block"
-            style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 80%, transparent)" }}
-            aria-hidden="true"
-          />
-        )}
+        <div
+          className="h-px w-12 shrink-0"
+          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 70%, transparent)" }}
+          aria-hidden="true"
+        />
 
-        <span
-          className={heading2}
-          style={{
-            color: "var(--hud-accent)",
-            textShadow: "0 0 32px color-mix(in srgb, var(--hud-glow) 55%, transparent)",
-          }}
-        >
+        <span className={line2Class} style={{ color: "var(--hud-accent)" }}>
           {data.line2}
         </span>
 
-        {!isMobile && (
-          <div
-            className="hidden h-px w-16 md:block"
-            style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 80%, transparent)" }}
-            aria-hidden="true"
-          />
-        )}
+        <div
+          className="h-px w-12 shrink-0"
+          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 70%, transparent)" }}
+          aria-hidden="true"
+        />
 
-        <span className={subtext} style={{ color: "var(--hud-text)" }}>
+        <span className={line3Class} style={{ color: "var(--hud-text)" }}>
           {data.line3}
         </span>
 
@@ -231,5 +257,6 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
 
       {!isMobile && <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />}
     </div>
+    </>
   )
 }
