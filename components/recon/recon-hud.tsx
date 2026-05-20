@@ -88,41 +88,88 @@ interface GatewayModalProps {
 function GatewayModal({ open, onClose }: GatewayModalProps) {
   if (!open) return null
 
+  const statusRows = [
+    { label: "GATEWAY", value: "READY" },
+    { label: "PROBE", value: "STANDBY" },
+    { label: "TRACKING", value: "OFFLINE" },
+  ] as const
+
   return (
     <div
-      className="pointer-events-auto fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm"
+      className="pointer-events-auto fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm sm:px-6"
       role="dialog"
       aria-modal="true"
       aria-label="RECON AR transfer modal"
     >
       <div
-        className="relative w-full max-w-md border border-[color:var(--hud-accent-dim)] bg-black/90 p-6"
+        className="relative w-full max-w-md border border-[color:var(--hud-accent-dim)] bg-black/90 p-5 sm:p-6"
         style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--hud-glow) 35%, transparent)" }}
       >
         <HudCornerBrackets />
 
-        <div className="mb-6 font-mono text-xs tracking-[0.28em] text-[color:var(--hud-text-dim)]">
+        <div className="mb-4 font-mono text-[length:clamp(0.6rem,2vw,0.7rem)] tracking-[0.26em] text-[color:var(--hud-text-dim)]">
           [ TRANSFER SESSION TO MOBILE PROBE ]
         </div>
 
-        <div className="relative mb-6 flex aspect-square w-full items-center justify-center border border-[color:var(--hud-accent-dim)] bg-[color:var(--hud-accent-dim)]">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--hud-text)] opacity-90">
+          Observation Deck → Diagnostic Probe handoff
+        </p>
+
+        <div
+          className="relative mb-4 border border-[color:var(--hud-accent-dim)] bg-black/40 px-4 py-4"
+          style={{
+            boxShadow: "inset 0 0 24px color-mix(in srgb, var(--hud-accent-dim) 35%, transparent)",
+          }}
+        >
           <HudCornerBrackets compact />
-          <div className="text-center font-mono text-xs tracking-[0.3em] text-[color:var(--hud-text-dim)]">
-            QR LINK PENDING
+          <div className="space-y-3 text-center font-mono">
+            <p className="text-[10px] tracking-[0.28em] text-[color:var(--hud-accent)]">
+              TRANSFER LINK READY
+            </p>
+            <p className="text-[9px] tracking-[0.22em] text-[color:var(--hud-text-dim)]">
+              MOBILE PROBE ENDPOINT
+            </p>
+            <p
+              className="break-all text-[length:clamp(0.65rem,2.5vw,0.8rem)] tracking-[0.14em] text-[color:var(--hud-text)] tabular-nums"
+              style={{
+                textShadow: "0 0 10px color-mix(in srgb, var(--hud-glow) 35%, transparent)",
+              }}
+            >
+              {RECON_AR_URL}
+            </p>
+            <p className="text-[9px] tracking-[0.2em] text-[color:var(--hud-text-dim)]">
+              SCAN ROUTE: {RECON_AR_URL}
+            </p>
           </div>
         </div>
 
-        <p className="mb-6 font-mono text-xs uppercase tracking-[0.2em] text-[color:var(--hud-text)]">
-          SCAN TO CONTINUE RECON PROCEDURE
+        <div className="mb-5 space-y-1.5 border border-[color:var(--hud-accent-dim)] bg-[color:var(--hud-accent-dim)] px-3 py-2.5">
+          {statusRows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between font-mono text-[9px] tracking-[0.18em]"
+            >
+              <span className="text-[color:var(--hud-text-dim)]">{row.label}</span>
+              <span className="text-[color:var(--hud-accent)] tabular-nums">{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--hud-text-dim)]">
+          Open mobile scanner to continue recon on probe route
         </p>
 
-        <div className="flex items-center justify-between gap-4">
-          <a href={RECON_AR_URL} className={hudActionBtn}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>
             <HudButtonCorners />
             OPEN MOBILE SCANNER
           </a>
 
-          <button type="button" onClick={onClose} className={`${hudActionBtn} text-[color:var(--hud-text-dim)]`}>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`${hudActionBtn} text-center text-[color:var(--hud-text-dim)] sm:flex-1`}
+          >
             <HudButtonCorners />
             [ CLOSE ]
           </button>
