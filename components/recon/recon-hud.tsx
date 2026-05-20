@@ -1,10 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ReconHudComposition } from "./recon-hud-composition"
 
 interface ReconHUDProps {
   sectorIndex: number
   isMobile?: boolean
+  sectorName?: string
+  progress?: number
 }
 
 const RECON_AR_URL = "/recon/ar"
@@ -129,7 +132,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
   )
 }
 
-export function ReconHUD({ sectorIndex, isMobile }: ReconHUDProps) {
+export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
   const data = SECTOR_DATA[safeSectorIndex]
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
@@ -158,8 +161,14 @@ export function ReconHUD({ sectorIndex, isMobile }: ReconHUDProps) {
 
   return (
     <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center px-4">
+      <ReconHudComposition
+        sectorIndex={safeSectorIndex}
+        isMobile={isMobile}
+        sectorName={sectorName}
+        progress={progress}
+      />
       <div
-        className={`relative flex max-w-[min(92vw,42rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] transition-opacity duration-300`}
+        className={`relative z-10 flex max-w-[min(92vw,42rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] transition-opacity duration-300`}
         style={{
           boxShadow: "0 0 48px color-mix(in srgb, var(--hud-glow) 28%, transparent)",
         }}

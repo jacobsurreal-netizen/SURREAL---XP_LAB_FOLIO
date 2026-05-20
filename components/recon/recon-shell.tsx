@@ -74,7 +74,12 @@ export function ReconShell({ children }: ReconShellProps) {
           />
         </div>
         <ReconOpticalOverlay />
-        <ReconHUD sectorIndex={sectorIndex} isMobile={isMobile} />
+        <ReconHUD
+          sectorIndex={sectorIndex}
+          isMobile={isMobile}
+          sectorName={sectorName}
+          progress={progress}
+        />
         <SoundLayer />
       </div>
       <div className="relative z-0 w-full overflow-x-hidden min-h-screen pointer-events-none">
