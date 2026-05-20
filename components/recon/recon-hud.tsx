@@ -31,6 +31,52 @@ function clampSectorIndex(index: number) {
   return Math.min(Math.max(0, index), 2)
 }
 
+function HudCornerBrackets({ compact }: { compact?: boolean }) {
+  const size = compact ? "w-3 h-3" : "w-4 h-4"
+  const colorClass = "text-[color:var(--hud-accent)] opacity-30"
+
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      <svg className={`absolute top-0 left-0 ${size} ${colorClass}`} viewBox="0 0 16 16">
+        <path d="M0 16 V0 H16" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`absolute top-0 right-0 ${size} ${colorClass}`} viewBox="0 0 16 16">
+        <path d="M16 16 V0 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`absolute bottom-0 left-0 ${size} ${colorClass}`} viewBox="0 0 16 16">
+        <path d="M0 0 V16 H16" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`absolute bottom-0 right-0 ${size} ${colorClass}`} viewBox="0 0 16 16">
+        <path d="M16 0 V16 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+    </div>
+  )
+}
+
+function HudButtonCorners() {
+  const cornerClass = "absolute w-2 h-2 text-[color:var(--hud-accent)] opacity-30"
+
+  return (
+    <>
+      <svg className={`${cornerClass} top-0 left-0`} viewBox="0 0 8 8" aria-hidden="true">
+        <path d="M0 8 V0 H8" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} top-0 right-0`} viewBox="0 0 8 8" aria-hidden="true">
+        <path d="M8 8 V0 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} bottom-0 left-0`} viewBox="0 0 8 8" aria-hidden="true">
+        <path d="M0 0 V8 H8" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} bottom-0 right-0`} viewBox="0 0 8 8" aria-hidden="true">
+        <path d="M8 0 V8 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+    </>
+  )
+}
+
+const hudActionBtn =
+  "relative border border-[color:var(--hud-accent-dim)] px-4 py-2 font-mono text-xs tracking-[0.18em] text-[color:var(--hud-text)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
+
 interface GatewayModalProps {
   open: boolean
   onClose: () => void
@@ -41,39 +87,40 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm pointer-events-auto"
+      className="pointer-events-auto fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="RECON AR transfer modal"
     >
-      <div className="w-full max-w-md border border-cyan-300/30 bg-black/90 p-6 shadow-[0_0_40px_rgba(34,211,238,0.12)]">
-        <div className="mb-6 font-mono text-xs tracking-[0.25em] text-cyan-200/80">
+      <div
+        className="relative w-full max-w-md border border-[color:var(--hud-accent-dim)] bg-black/90 p-6"
+        style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--hud-glow) 35%, transparent)" }}
+      >
+        <HudCornerBrackets />
+
+        <div className="mb-6 font-mono text-xs tracking-[0.28em] text-[color:var(--hud-text-dim)]">
           [ TRANSFER SESSION TO MOBILE PROBE ]
         </div>
 
-        <div className="mb-6 flex aspect-square w-full items-center justify-center border border-cyan-300/25 bg-cyan-300/5">
-          <div className="text-center font-mono text-xs tracking-[0.3em] text-cyan-100/60">
+        <div className="relative mb-6 flex aspect-square w-full items-center justify-center border border-[color:var(--hud-accent-dim)] bg-[color:var(--hud-accent-dim)]">
+          <HudCornerBrackets compact />
+          <div className="text-center font-mono text-xs tracking-[0.3em] text-[color:var(--hud-text-dim)]">
             QR LINK PENDING
           </div>
         </div>
 
-        <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-cyan-100/70">
+        <p className="mb-6 font-mono text-xs uppercase tracking-[0.2em] text-[color:var(--hud-text)]">
           SCAN TO CONTINUE RECON PROCEDURE
         </p>
 
         <div className="flex items-center justify-between gap-4">
-          <a
-            href={RECON_AR_URL}
-            className="border border-cyan-300/40 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/10"
-          >
+          <a href={RECON_AR_URL} className={hudActionBtn}>
+            <HudButtonCorners />
             OPEN MOBILE SCANNER
           </a>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="border border-cyan-300/20 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100/70 transition hover:bg-cyan-300/10 hover:text-cyan-100"
-          >
+          <button type="button" onClick={onClose} className={`${hudActionBtn} text-[color:var(--hud-text-dim)]`}>
+            <HudButtonCorners />
             [ CLOSE ]
           </button>
         </div>
@@ -93,48 +140,87 @@ export function ReconHUD({ sectorIndex, isMobile }: ReconHUDProps) {
     }
   }, [safeSectorIndex])
 
-  // Responsive text classes
   const heading1 = isMobile
-    ? "font-heading text-lg font-bold leading-none tracking-[0.15em] select-none opacity-40 text-center"
-    : "font-heading text-[clamp(1.5rem,5vw,4rem)] font-bold leading-none tracking-[0.2em] select-none opacity-40 text-center"
+    ? "font-heading text-lg font-bold leading-none tracking-[0.22em] select-none text-center"
+    : "font-heading text-[clamp(1.5rem,5vw,4rem)] font-bold leading-none tracking-[0.28em] select-none text-center"
   const heading2 = isMobile
-    ? "font-heading text-2xl font-bold leading-none tracking-[0.15em] select-none opacity-60 text-center"
-    : "font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.2em] select-none opacity-60 text-center"
+    ? "font-heading text-2xl font-bold leading-none tracking-[0.2em] select-none text-center"
+    : "font-heading text-[clamp(2rem,8vw,6rem)] font-bold leading-none tracking-[0.24em] select-none text-center"
   const subtext = isMobile
-    ? "font-mono text-xs tracking-[0.15em] select-none opacity-50 mt-4 text-center"
-    : "font-mono text-[clamp(0.8rem,2vw,1.5rem)] tracking-[0.2em] select-none opacity-50 mt-8 text-center"
+    ? "font-mono text-xs tracking-[0.2em] select-none text-center"
+    : "font-mono text-[clamp(0.8rem,2vw,1.5rem)] tracking-[0.24em] select-none text-center"
   const ctaBtn = isMobile
-    ? "pointer-events-auto mt-6 border border-cyan-300/40 px-4 py-2 font-mono text-xs tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-300/10"
-    : "pointer-events-auto mt-8 border border-cyan-300/40 px-5 py-3 font-mono text-xs tracking-[0.22em] text-cyan-100 transition hover:bg-cyan-300/10"
+    ? `pointer-events-auto relative ${hudActionBtn} mt-2`
+    : `pointer-events-auto relative ${hudActionBtn} mt-2 px-5 py-3 tracking-[0.22em]`
+
+  const panelPadding = isMobile ? "px-5 py-6" : "px-8 py-8"
+  const panelGap = isMobile ? "gap-3" : "gap-5"
 
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center">
-      <div className="flex flex-col items-center gap-4 transition-opacity duration-300">
-        <span className={heading1} style={{ color: "var(--hud-accent-dim, rgba(160, 130, 210, 0.55))" }}>{data.line1}</span>
-        <span className={heading2} style={{ color: "var(--hud-accent, rgba(180, 120, 255, 0.95))" }}>{data.line2}</span>
-        <span className={subtext} style={{ color: "var(--hud-text, rgba(205, 170, 255, 0.82))" }}>{data.line3}</span>
-        {safeSectorIndex === 2 && (
-          isMobile ? (
-            <a
-              href="/recon/ar"
-              className={ctaBtn}
-            >
+    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center px-4">
+      <div
+        className={`relative flex max-w-[min(92vw,42rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] transition-opacity duration-300`}
+        style={{
+          boxShadow: "0 0 48px color-mix(in srgb, var(--hud-glow) 28%, transparent)",
+        }}
+      >
+        <HudCornerBrackets compact={isMobile} />
+
+        <span
+          className={heading1}
+          style={{
+            color: "var(--hud-text-dim)",
+            textShadow: "0 0 24px color-mix(in srgb, var(--hud-glow) 40%, transparent)",
+          }}
+        >
+          {data.line1}
+        </span>
+
+        {!isMobile && (
+          <div
+            className="hidden h-px w-16 md:block"
+            style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 80%, transparent)" }}
+            aria-hidden="true"
+          />
+        )}
+
+        <span
+          className={heading2}
+          style={{
+            color: "var(--hud-accent)",
+            textShadow: "0 0 32px color-mix(in srgb, var(--hud-glow) 55%, transparent)",
+          }}
+        >
+          {data.line2}
+        </span>
+
+        {!isMobile && (
+          <div
+            className="hidden h-px w-16 md:block"
+            style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 80%, transparent)" }}
+            aria-hidden="true"
+          />
+        )}
+
+        <span className={subtext} style={{ color: "var(--hud-text)" }}>
+          {data.line3}
+        </span>
+
+        {safeSectorIndex === 2 &&
+          (isMobile ? (
+            <a href={RECON_AR_URL} className={ctaBtn}>
+              <HudButtonCorners />
               [ ACTIVATE SCANNER ]
             </a>
           ) : (
-            <button
-              type="button"
-              onClick={() => setIsGatewayOpen(true)}
-              className={ctaBtn}
-            >
+            <button type="button" onClick={() => setIsGatewayOpen(true)} className={ctaBtn}>
+              <HudButtonCorners />
               [ REQUEST_AR_LINK ]
             </button>
-          )
-        )}
+          ))}
       </div>
-      {!isMobile && (
-        <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />
-      )}
+
+      {!isMobile && <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />}
     </div>
   )
 }
