@@ -102,7 +102,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
       aria-label="RECON AR transfer modal"
     >
       <div
-        className="relative w-full max-w-md border border-[color:var(--hud-accent-dim)] bg-black/90 p-5 sm:p-6"
+        className="relative w-full max-w-md border border-[#00ac6c]/20 bg-[#040b0a]/90 backdrop-blur-md p-5 sm:p-6"
         style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--hud-glow) 35%, transparent)" }}
       >
         <HudCornerBrackets />
@@ -116,10 +116,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
         </p>
 
         <div
-          className="relative mb-4 border border-[color:var(--hud-accent-dim)] bg-black/40 px-4 py-4"
-          style={{
-            boxShadow: "inset 0 0 24px color-mix(in srgb, var(--hud-accent-dim) 35%, transparent)",
-          }}
+          className="relative mb-4 bg-black/40 px-4 py-4"
         >
           <HudCornerBrackets compact />
           <div className="space-y-3 text-center font-mono">
@@ -143,7 +140,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
           </div>
         </div>
 
-        <div className="mb-5 space-y-1.5 border border-[color:var(--hud-accent-dim)] bg-[color:var(--hud-accent-dim)] px-3 py-2.5">
+        <div className="mb-5 space-y-1.5 px-1 py-2">
           {statusRows.map((row) => (
             <div
               key={row.label}
@@ -193,7 +190,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
   const line1Class =
     "font-mono font-medium leading-tight tracking-[0.22em] select-none text-center uppercase text-[length:clamp(0.5rem,1.1vw,0.68rem)]"
   const line2Class =
-    "recon-hud-primary-line font-mono font-semibold leading-snug tracking-[0.16em] select-none text-center uppercase text-[length:clamp(0.72rem,2vw,1.05rem)] max-w-[min(100%,20rem)]"
+    "recon-hud-primary-line font-mono font-semibold leading-snug tracking-[0.22em] select-none text-center uppercase text-[length:clamp(0.58rem,1.6vw,0.84rem)] max-w-[min(100%,20rem)]"
   const line3Class =
     "font-mono font-normal leading-tight tracking-[0.18em] select-none text-center uppercase text-[length:clamp(0.5rem,1.2vw,0.72rem)] opacity-90"
   const ctaBtn = isMobile
@@ -248,7 +245,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
         }
       `}</style>
 
-    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center px-4">
+    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-end pb-[12vh] md:pb-[18vh] px-4">
       <ReconHudComposition
         sectorIndex={safeSectorIndex}
         isMobile={isMobile}
@@ -256,7 +253,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
         progress={progress}
       />
       <div
-        className={`relative z-10 flex max-w-[min(88vw,22rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[color:var(--hud-accent-dim)] bg-black/25 backdrop-blur-[2px] transition-opacity duration-300`}
+        className={`relative z-10 flex max-w-[min(88vw,22rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[#00ac6c]/20 bg-[#040b0a]/70 backdrop-blur-sm transition-opacity duration-300`}
         style={{
           boxShadow:
             "0 0 24px color-mix(in srgb, var(--hud-glow) 18%, transparent), inset 0 0 20px color-mix(in srgb, var(--hud-accent-dim) 25%, transparent)",
@@ -270,7 +267,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
 
         <div
           className="h-px w-12 shrink-0"
-          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 70%, transparent)" }}
+          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 30%, transparent)" }}
           aria-hidden="true"
         />
 
@@ -280,7 +277,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
 
         <div
           className="h-px w-12 shrink-0"
-          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 70%, transparent)" }}
+          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 30%, transparent)" }}
           aria-hidden="true"
         />
 
