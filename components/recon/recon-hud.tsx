@@ -159,7 +159,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>
             <HudButtonCorners />
-            OPEN MOBILE SCANNER
+            &gt; OPEN_MOBILE_SCANNER
           </a>
 
           <button
@@ -168,7 +168,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
             className={`${hudActionBtn} text-center text-[color:var(--hud-text-dim)] sm:flex-1`}
           >
             <HudButtonCorners />
-            [ CLOSE ]
+            &gt; CLOSE_CHANNEL
           </button>
         </div>
       </div>
@@ -289,12 +289,12 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
           (isMobile ? (
             <a href={RECON_AR_URL} className={ctaBtn}>
               <HudButtonCorners />
-              [ ACTIVATE SCANNER ]
+              &gt; ACTIVATE_SCANNER
             </a>
           ) : (
             <button type="button" onClick={() => setIsGatewayOpen(true)} className={ctaBtn}>
               <HudButtonCorners />
-              [ REQUEST_AR_LINK ]
+              &gt; REQUEST_AR_LINK
             </button>
           ))}
       </div>

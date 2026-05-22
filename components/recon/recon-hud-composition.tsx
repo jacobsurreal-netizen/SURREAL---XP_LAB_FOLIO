@@ -10,9 +10,16 @@ export interface ReconHudCompositionProps {
 const PANEL_TITLES = ["OBSERVATION SCAN", "SUBJECT ANALYSIS", "GATEWAY OPS"] as const
 
 const METER_PLACEHOLDERS = [
-  { label: "GRAVIMETRIC", width: "62%" },
-  { label: "FIELD RESOLUTION", width: "48%" },
-  { label: "SIGNAL LOCK", width: "35%" },
+  { label: "GRAVIMETRIC", width: "84%", value: "84%" },
+  { label: "FIELD RESOLUTION", width: "76%", value: "76%" },
+  { label: "SIGNAL LOCK", width: "88%", value: "88%" },
+] as const
+
+const RIGHT_PANEL_DATA = [
+  { label: "FIELD WAVE", value: "DETECTED" },
+  { label: "BIO-SIGNATURE", value: "NEGATIVE" },
+  { label: "SPATIAL DIST", value: "0.003%" },
+  { label: "UPLINK", value: "STABLE" },
 ] as const
 
 function CompositionBrackets({ compact }: { compact?: boolean }) {
@@ -42,7 +49,7 @@ function TCenterMarker({ small }: { small?: boolean }) {
   return (
     <svg
       viewBox="0 0 40 40"
-      className={`${size} text-[color:var(--hud-accent)] opacity-[0.38]`}
+      className={`${size} text-[color:var(--hud-accent)] opacity-[0.38] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
       aria-hidden="true"
     >
       <line x1="20" y1="0" x2="20" y2="15" stroke="currentColor" strokeWidth="1" />
@@ -51,6 +58,23 @@ function TCenterMarker({ small }: { small?: boolean }) {
       <line x1="25" y1="20" x2="40" y2="20" stroke="currentColor" strokeWidth="1" />
       <circle cx="20" cy="20" r="3" fill="none" stroke="currentColor" strokeWidth="1" />
     </svg>
+  )
+}
+
+function ScanRing({ small }: { small?: boolean }) {
+  const size = small ? "w-[clamp(200px,65vmin,320px)]" : "w-[clamp(300px,45vmin,500px)]"
+  return (
+    <div className={`relative ${size} aspect-square flex items-center justify-center opacity-30 text-[color:var(--hud-accent)]`}>
+      <svg className="absolute inset-0 w-full h-full animate-[spin_60s_linear_infinite]" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="98" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 8" />
+        <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1 4" />
+        <path d="M 100 2 L 100 8 M 100 192 L 100 198 M 2 100 L 8 100 M 192 100 L 198 100" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className="absolute inset-0 w-full h-full animate-[spin_40s_linear_infinite_reverse]" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="75" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="20 10 5 10" />
+      </svg>
+      <TCenterMarker small={small} />
+    </div>
   )
 }
 
@@ -101,10 +125,12 @@ function MobileFrame() {
 function StaticMeterShell({
   label,
   width,
+  value,
   compact,
 }: {
   label: string
   width: string
+  value?: string
   compact?: boolean
 }) {
   return (
@@ -115,7 +141,7 @@ function StaticMeterShell({
         }`}
       >
         <span className="max-w-[9rem] truncate">{label}</span>
-        <span className="tabular-nums opacity-60">—</span>
+        <span className="tabular-nums opacity-80 text-[color:var(--hud-accent)]">{value || "—"}</span>
       </div>
       <div
         className={`relative w-full overflow-hidden bg-[color:var(--hud-accent-dim)] ${
@@ -156,6 +182,54 @@ function TopStatusStrip({
   )
 }
 
+function RightDiagnosticPanel() {
+  return (
+    <div className="absolute right-3 top-1/2 w-40 -translate-y-1/2 opacity-90 lg:right-6 lg:w-48">
+      <div className="relative p-2.5 lg:p-3">
+        <CompositionBrackets />
+        <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
+          FIELD READINGS LOG
+        </div>
+        <div className="space-y-2 lg:space-y-2.5">
+          {RIGHT_PANEL_DATA.map((item) => (
+            <div
+              key={item.label}
+              className="flex justify-between font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
+            >
+              <span>{item.label}</span>
+              <span className="text-[color:var(--hud-accent)] opacity-80">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BottomCommandStrip({ compact }: { compact?: boolean }) {
+  const textSize = compact ? "text-[6px]" : "text-[7px] md:text-[8px]"
+  const spacing = compact ? "gap-4" : "gap-6 md:gap-10"
+
+  return (
+    <div
+      className={`absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex ${spacing} text-[color:var(--hud-text-dim)] font-mono tracking-[0.2em] opacity-60 ${textSize}`}
+    >
+      <div className="flex flex-col items-center gap-1">
+        <span className="opacity-50">COORDINATES</span>
+        <span className="text-[color:var(--hud-accent)]">49.507R / -55.7802</span>
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <span className="opacity-50">RECON VECTOR</span>
+        <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <span className="opacity-50">PROBE CONTROL</span>
+        <span className="text-[color:var(--hud-accent)]">AUTO</span>
+      </div>
+    </div>
+  )
+}
+
 function DesktopComposition({
   sectorIndex,
   sectorName,
@@ -183,17 +257,19 @@ function DesktopComposition({
           </div>
           <div className="space-y-2 lg:space-y-2.5">
             {METER_PLACEHOLDERS.map((meter) => (
-              <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} />
+              <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} value={meter.value} />
             ))}
           </div>
         </div>
       </div>
 
+      <RightDiagnosticPanel />
+
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative flex h-[min(38vw,38vh)] w-[min(38vw,38vh)] max-h-[320px] max-w-[320px] items-center justify-center">
-          <TCenterMarker />
-        </div>
+        <ScanRing />
       </div>
+
+      <BottomCommandStrip />
     </div>
   )
 }
@@ -220,15 +296,17 @@ function MobileComposition({
         <div className="relative p-2.5 opacity-90">
           <CompositionBrackets compact />
           <div className="grid grid-cols-2 gap-3">
-            <StaticMeterShell label="GRAVIMETRIC" width="62%" compact />
-            <StaticMeterShell label="FIELD RES." width="48%" compact />
+            <StaticMeterShell label="GRAVIMETRIC" width="84%" value="84%" compact />
+            <StaticMeterShell label="FIELD RES." width="76%" value="76%" compact />
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 items-center justify-center px-4">
-        <TCenterMarker small />
+        <ScanRing small />
       </div>
+
+      <BottomCommandStrip compact />
     </div>
   )
 }
