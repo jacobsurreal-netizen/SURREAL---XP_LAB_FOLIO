@@ -300,7 +300,7 @@ function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
 function GatewayCommandTrigger({ onRequestArLink }: { onRequestArLink: () => void }) {
   return (
     <div
-      className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:bottom-[20vh]"
+      className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-10 flex -translate-x-1/2 translate-y-5 flex-col items-center gap-2 md:bottom-[20vh]"
       role="group"
       aria-label="Gateway transfer command"
     >
