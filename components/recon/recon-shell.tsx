@@ -6,6 +6,7 @@ import { SoundLayer } from "@/components/sound-layer"
 import { ReconHUD } from "./recon-hud"
 import { ReconOpticalOverlay } from "./recon-optical-overlay"
 import { useEffect, useState } from "react"
+import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
 
 interface ReconShellProps {
   children: React.ReactNode
@@ -15,6 +16,11 @@ export function ReconShell({ children }: ReconShellProps) {
   const [progress, setProgress] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
+
+  const smoothedProgress = useSmoothedProgress(progress, {
+    lerpFactor: 0.015,
+    epsilon: 0.0005,
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -59,13 +65,13 @@ export function ReconShell({ children }: ReconShellProps) {
     <>
       <div className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none">
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <WorldLayer progress={progress} sector={sectorName} mode={mode} />
+          <WorldLayer progress={smoothedProgress} sector={sectorName} mode={mode} />
         </div>
         <div className="absolute inset-0 z-10 pointer-events-none">
           <ThreeRuntimeAdapter
-            progress={progress}
+            progress={smoothedProgress}
             snapshot={{
-              scrollProgress: progress,
+              scrollProgress: smoothedProgress,
               sectorIndex,
               sectorName,
               isSnapped: true,
