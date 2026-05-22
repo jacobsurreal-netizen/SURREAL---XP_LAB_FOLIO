@@ -295,27 +295,60 @@ function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
   )
 }
 
+// ─── Gateway terminal command (sector 2, desktop) ───────────────────────────
+
+function GatewayCommandTrigger({ onRequestArLink }: { onRequestArLink: () => void }) {
+  return (
+    <div
+      className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:bottom-[20vh]"
+      role="group"
+      aria-label="Gateway transfer command"
+    >
+      <button
+        type="button"
+        onClick={onRequestArLink}
+        className="group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-6 py-3 font-mono transition duration-200 hover:border-[color:var(--hud-accent)] hover:bg-[color:var(--hud-accent-dim)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--hud-accent)]"
+        style={{
+          boxShadow:
+            "0 0 0 1px color-mix(in srgb, var(--hud-accent-dim) 50%, transparent), 0 0 20px color-mix(in srgb, var(--hud-glow) 18%, transparent)",
+        }}
+      >
+        <CompositionBrackets compact />
+        <span
+          className="relative block text-[length:clamp(0.72rem,1.5vw,0.9rem)] font-medium tracking-[0.2em] text-[color:var(--hud-accent)] transition group-hover:text-[color:var(--hud-text)]"
+          style={{
+            textShadow: "0 0 14px color-mix(in srgb, var(--hud-glow) 40%, transparent)",
+          }}
+        >
+          &gt; REQUEST_AR_LINK
+        </span>
+      </button>
+      <span className="font-mono text-[7px] tracking-[0.24em] text-[color:var(--hud-text-dim)] opacity-70 md:text-[8px]">
+        PHYSICAL TOKEN REQUIRED
+      </span>
+    </div>
+  )
+}
+
 // ─── Bottom command strip ─────────────────────────────────────────────────────
 
 interface BottomCommandStripProps {
   compact?: boolean
   sectorIndex?: number
-  onRequestArLink?: () => void
 }
 
-function BottomCommandStrip({ compact, sectorIndex = 0, onRequestArLink }: BottomCommandStripProps) {
+function BottomCommandStrip({ compact, sectorIndex = 0 }: BottomCommandStripProps) {
   const textSize = compact ? "text-[6px]" : "text-[7px] md:text-[8px]"
   const spacing = compact ? "gap-4" : "gap-6 md:gap-10"
   const statusLine = BOTTOM_STATUS[Math.min(sectorIndex, 2)]
-  const showCta = sectorIndex === 2
+  const isGateway = sectorIndex === 2
 
   return (
     <div
-      className={`absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 ${textSize}`}
+      className={`absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 md:bottom-8 ${textSize}`}
     >
-      {/* coordinates / vector / probe row */}
       <div
-        className={`flex ${spacing} text-[color:var(--hud-text-dim)] font-mono tracking-[0.2em] opacity-60`}
+        className={`flex ${spacing} font-mono tracking-[0.2em] text-[color:var(--hud-text-dim)] opacity-60`}
       >
         <div className="flex flex-col items-center gap-1">
           <span className="opacity-50">COORDINATES</span>
@@ -331,29 +364,18 @@ function BottomCommandStrip({ compact, sectorIndex = 0, onRequestArLink }: Botto
         </div>
       </div>
 
-      {/* 1px separator */}
       <div
-        className="w-48 h-px opacity-20 hidden md:block"
+        className="hidden h-px w-48 opacity-20 md:block"
         style={{ background: "var(--hud-accent)" }}
         aria-hidden="true"
       />
 
-      {/* sector status readout */}
-      <div
-        className={`font-mono tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 ${compact ? "text-[6px]" : "text-[7px]"}`}
-      >
-        {statusLine}
-      </div>
-
-      {/* Gateway CTA — terminal command style, desktop only */}
-      {showCta && onRequestArLink && (
-        <button
-          type="button"
-          onClick={onRequestArLink}
-          className={`pointer-events-auto font-mono tracking-[0.22em] text-[color:var(--hud-accent)] opacity-70 hover:opacity-100 transition-opacity ${compact ? "text-[6px]" : "text-[7px]"}`}
+      {!isGateway && (
+        <div
+          className={`font-mono tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 ${compact ? "text-[6px]" : "text-[7px]"}`}
         >
-          {"> REQUEST_AR_LINK"}
-        </button>
+          {statusLine}
+        </div>
       )}
     </div>
   )
@@ -391,12 +413,12 @@ function DesktopComposition({
       {/* Reticle label — floats just below scan ring center */}
       <ReticleLabel sectorIndex={sectorIndex} />
 
-      {/* pointer-events-auto wrapper so CTA is clickable through the aria-hidden overlay */}
+      {sectorIndex === 2 && onRequestArLink && (
+        <GatewayCommandTrigger onRequestArLink={onRequestArLink} />
+      )}
+
       <div className="pointer-events-auto">
-        <BottomCommandStrip
-          sectorIndex={sectorIndex}
-          onRequestArLink={onRequestArLink}
-        />
+        <BottomCommandStrip sectorIndex={sectorIndex} />
       </div>
     </div>
   )
@@ -440,11 +462,13 @@ function MobileComposition({
         <ScanRing small />
       </div>
 
-      {/* Mobile bottom strip — status only (no CTA, mobile uses direct AR link) */}
+      {/* Mobile bottom strip — telemetry only in gateway (status lives near command CTA) */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-        <div className="font-mono text-[6px] tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 whitespace-nowrap">
-          {statusLine}
-        </div>
+        {sectorIndex !== 2 && (
+          <div className="font-mono text-[6px] tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 whitespace-nowrap">
+            {statusLine}
+          </div>
+        )}
         <div className="flex gap-4 font-mono text-[6px] tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-50">
           <span>49.507R / -55.7802</span>
           <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
