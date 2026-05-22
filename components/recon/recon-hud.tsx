@@ -12,24 +12,6 @@ interface ReconHUDProps {
 
 const RECON_AR_URL = "/recon/ar"
 
-const SECTOR_DATA = [
-  {
-    line1: "[ RECON MODE ]",
-    line2: "[ OBSERVATION DECK ]",
-    line3: "[ ANOMALY CONTAINED ]",
-  },
-  {
-    line1: "[ SUBJECT_ANALYSIS ]",
-    line2: "[ ANOMALY DETECTED ]",
-    line3: "[ TELEMETRY PARTIAL ]",
-  },
-  {
-    line1: "[ INITIATE PHYSICAL RECON ]",
-    line2: "[ TRANSFER SESSION TO MOBILE PROBE ]",
-    line3: "[ GATEWAY PENDING ]",
-  },
-]
-
 function clampSectorIndex(index: number) {
   return Math.min(Math.max(0, index), 2)
 }
@@ -178,7 +160,6 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
 
 export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
-  const data = SECTOR_DATA[safeSectorIndex]
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
 
   useEffect(() => {
@@ -186,19 +167,6 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
       setIsGatewayOpen(false)
     }
   }, [safeSectorIndex])
-
-  const line1Class =
-    "font-mono font-medium leading-tight tracking-[0.22em] select-none text-center uppercase text-[length:clamp(0.5rem,1.1vw,0.68rem)]"
-  const line2Class =
-    "recon-hud-primary-line font-mono font-semibold leading-snug tracking-[0.22em] select-none text-center uppercase text-[length:clamp(0.58rem,1.6vw,0.84rem)] max-w-[min(100%,20rem)]"
-  const line3Class =
-    "font-mono font-normal leading-tight tracking-[0.18em] select-none text-center uppercase text-[length:clamp(0.5rem,1.2vw,0.72rem)] opacity-90"
-  const ctaBtn = isMobile
-    ? `pointer-events-auto relative ${hudActionBtn} mt-1`
-    : `pointer-events-auto relative ${hudActionBtn} mt-1.5 px-4 py-2 tracking-[0.2em]`
-
-  const panelPadding = isMobile ? "px-3.5 py-3" : "px-5 py-4"
-  const panelGap = isMobile ? "gap-1.5" : "gap-2"
 
   return (
     <>
@@ -245,62 +213,32 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
         }
       `}</style>
 
-    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-end pb-[12vh] md:pb-[18vh] px-4">
-      <ReconHudComposition
-        sectorIndex={safeSectorIndex}
-        isMobile={isMobile}
-        sectorName={sectorName}
-        progress={progress}
-      />
-      <div
-        className={`relative z-10 flex max-w-[min(88vw,22rem)] flex-col items-center ${panelGap} ${panelPadding} border border-[#00ac6c]/20 bg-[#040b0a]/70 backdrop-blur-sm transition-opacity duration-300`}
-        style={{
-          boxShadow:
-            "0 0 24px color-mix(in srgb, var(--hud-glow) 18%, transparent), inset 0 0 20px color-mix(in srgb, var(--hud-accent-dim) 25%, transparent)",
-        }}
-      >
-        <HudCornerBrackets compact={isMobile} />
+      {/*
+        Mobile sector 2: direct AR link replaces modal (no pointer-events issue on mobile).
+        The composition's bottom strip carries the status. No card rendered.
+      */}
+      {isMobile && safeSectorIndex === 2 && (
+        <div className="pointer-events-auto absolute bottom-[10vh] left-1/2 z-30 -translate-x-1/2">
+          <a
+            href={RECON_AR_URL}
+            className="font-mono text-[7px] tracking-[0.22em] text-[color:var(--hud-accent)] opacity-70 hover:opacity-100 transition-opacity"
+          >
+            {">"} ACTIVATE_SCANNER
+          </a>
+        </div>
+      )}
 
-        <span className={line1Class} style={{ color: "var(--hud-text-dim)" }}>
-          {data.line1}
-        </span>
-
-        <div
-          className="h-px w-12 shrink-0"
-          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 30%, transparent)" }}
-          aria-hidden="true"
+      <div className="absolute inset-0 z-30 pointer-events-none">
+        <ReconHudComposition
+          sectorIndex={safeSectorIndex}
+          isMobile={isMobile}
+          sectorName={sectorName}
+          progress={progress}
+          onRequestArLink={!isMobile ? () => setIsGatewayOpen(true) : undefined}
         />
-
-        <span className={line2Class} style={{ color: "var(--hud-accent)" }}>
-          {data.line2}
-        </span>
-
-        <div
-          className="h-px w-12 shrink-0"
-          style={{ background: "color-mix(in srgb, var(--hud-accent-dim) 30%, transparent)" }}
-          aria-hidden="true"
-        />
-
-        <span className={line3Class} style={{ color: "var(--hud-text)" }}>
-          {data.line3}
-        </span>
-
-        {safeSectorIndex === 2 &&
-          (isMobile ? (
-            <a href={RECON_AR_URL} className={ctaBtn}>
-              <HudButtonCorners />
-              &gt; ACTIVATE_SCANNER
-            </a>
-          ) : (
-            <button type="button" onClick={() => setIsGatewayOpen(true)} className={ctaBtn}>
-              <HudButtonCorners />
-              &gt; REQUEST_AR_LINK
-            </button>
-          ))}
       </div>
 
       {!isMobile && <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />}
-    </div>
     </>
   )
 }

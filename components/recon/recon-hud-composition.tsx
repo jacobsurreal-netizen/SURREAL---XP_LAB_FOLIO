@@ -5,9 +5,18 @@ export interface ReconHudCompositionProps {
   isMobile?: boolean
   sectorName?: string
   progress?: number
+  onRequestArLink?: () => void
 }
 
+// ─── Sector-specific HUD data ───────────────────────────────────────────────
+
 const PANEL_TITLES = ["OBSERVATION SCAN", "SUBJECT ANALYSIS", "GATEWAY OPS"] as const
+
+const RETICLE_LABELS = [
+  "LOG_000 // DORMANT",
+  "NODE_ALPHA // PARTIAL LOCK",
+  "CONTACT WINDOW // READY",
+] as const
 
 const METER_PLACEHOLDERS = [
   { label: "GRAVIMETRIC", width: "84%", value: "84%" },
@@ -16,11 +25,36 @@ const METER_PLACEHOLDERS = [
 ] as const
 
 const RIGHT_PANEL_DATA = [
-  { label: "FIELD WAVE", value: "DETECTED" },
-  { label: "BIO-SIGNATURE", value: "NEGATIVE" },
-  { label: "SPATIAL DIST", value: "0.003%" },
-  { label: "UPLINK", value: "STABLE" },
+  // Sector 0 — Observation
+  [
+    { label: "FIELD WAVE", value: "DETECTED" },
+    { label: "BIO-SIGNATURE", value: "NEGATIVE" },
+    { label: "SPATIAL DIST", value: "0.003%" },
+    { label: "UPLINK", value: "STABLE" },
+  ],
+  // Sector 1 — Analysis
+  [
+    { label: "MEMBRANE READINGS", value: "UNSTABLE" },
+    { label: "OPTICAL MODEL", value: "DEGRADED" },
+    { label: "VIEWPOINT COUNT", value: "INSUFFICIENT" },
+    { label: "TELEMETRY", value: "PARTIAL" },
+  ],
+  // Sector 2 — Gateway
+  [
+    { label: "PROBE ENDPOINT", value: "STANDBY" },
+    { label: "TRACKING", value: "OFFLINE" },
+    { label: "AR LINK", value: "READY" },
+    { label: "TRANSFER", value: "PENDING" },
+  ],
 ] as const
+
+const BOTTOM_STATUS = [
+  "CONTAINMENT FIELD: STABLE",
+  "SINGLE VIEWPOINT INSUFFICIENT",
+  "PHYSICAL TOKEN REQUIRED",
+] as const
+
+// ─── Primitives ──────────────────────────────────────────────────────────────
 
 function CompositionBrackets({ compact }: { compact?: boolean }) {
   const size = compact ? "w-3 h-3" : "w-4 h-4"
@@ -157,6 +191,8 @@ function StaticMeterShell({
   )
 }
 
+// ─── Top status strip ────────────────────────────────────────────────────────
+
 function TopStatusStrip({
   sectorName,
   progress,
@@ -182,7 +218,60 @@ function TopStatusStrip({
   )
 }
 
-function RightDiagnosticPanel() {
+// ─── Reticle label — near-artifact microcopy ─────────────────────────────────
+
+/**
+ * Small instrument label that floats just below the scan-ring center.
+ * Carries sector-specific artifact ID / status. NOT a card — no background.
+ */
+function ReticleLabel({ sectorIndex }: { sectorIndex: number }) {
+  const label = RETICLE_LABELS[Math.min(sectorIndex, 2)]
+  return (
+    <div
+      className="absolute left-1/2 -translate-x-1/2"
+      style={{ bottom: "calc(50% - clamp(160px, 25vmin, 270px))" }}
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-1.5">
+        {/* tick mark left */}
+        <div className="h-px w-3 bg-[color:var(--hud-accent)] opacity-30" />
+        <span
+          className="font-mono text-[7px] tracking-[0.22em] text-[color:var(--hud-accent)] opacity-50 whitespace-nowrap"
+        >
+          {label}
+        </span>
+        {/* tick mark right */}
+        <div className="h-px w-3 bg-[color:var(--hud-accent)] opacity-30" />
+      </div>
+    </div>
+  )
+}
+
+// ─── Left scanner panel ───────────────────────────────────────────────────────
+
+function LeftScannerPanel({ sectorIndex }: { sectorIndex: number }) {
+  const panelTitle = PANEL_TITLES[Math.min(sectorIndex, 2)]
+  return (
+    <div className="absolute left-3 top-1/2 w-36 -translate-y-1/2 opacity-90 lg:left-6 lg:w-40">
+      <div className="relative p-2.5 lg:p-3">
+        <CompositionBrackets />
+        <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
+          {panelTitle}
+        </div>
+        <div className="space-y-2 lg:space-y-2.5">
+          {METER_PLACEHOLDERS.map((meter) => (
+            <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} value={meter.value} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Right diagnostic panel ───────────────────────────────────────────────────
+
+function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
+  const rows = RIGHT_PANEL_DATA[Math.min(sectorIndex, 2)]
   return (
     <div className="absolute right-3 top-1/2 w-40 -translate-y-1/2 opacity-90 lg:right-6 lg:w-48">
       <div className="relative p-2.5 lg:p-3">
@@ -191,7 +280,7 @@ function RightDiagnosticPanel() {
           FIELD READINGS LOG
         </div>
         <div className="space-y-2 lg:space-y-2.5">
-          {RIGHT_PANEL_DATA.map((item) => (
+          {rows.map((item) => (
             <div
               key={item.label}
               className="flex justify-between font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
@@ -206,41 +295,83 @@ function RightDiagnosticPanel() {
   )
 }
 
-function BottomCommandStrip({ compact }: { compact?: boolean }) {
+// ─── Bottom command strip ─────────────────────────────────────────────────────
+
+interface BottomCommandStripProps {
+  compact?: boolean
+  sectorIndex?: number
+  onRequestArLink?: () => void
+}
+
+function BottomCommandStrip({ compact, sectorIndex = 0, onRequestArLink }: BottomCommandStripProps) {
   const textSize = compact ? "text-[6px]" : "text-[7px] md:text-[8px]"
   const spacing = compact ? "gap-4" : "gap-6 md:gap-10"
+  const statusLine = BOTTOM_STATUS[Math.min(sectorIndex, 2)]
+  const showCta = sectorIndex === 2
 
   return (
     <div
-      className={`absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex ${spacing} text-[color:var(--hud-text-dim)] font-mono tracking-[0.2em] opacity-60 ${textSize}`}
+      className={`absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 ${textSize}`}
     >
-      <div className="flex flex-col items-center gap-1">
-        <span className="opacity-50">COORDINATES</span>
-        <span className="text-[color:var(--hud-accent)]">49.507R / -55.7802</span>
+      {/* coordinates / vector / probe row */}
+      <div
+        className={`flex ${spacing} text-[color:var(--hud-text-dim)] font-mono tracking-[0.2em] opacity-60`}
+      >
+        <div className="flex flex-col items-center gap-1">
+          <span className="opacity-50">COORDINATES</span>
+          <span className="text-[color:var(--hud-accent)]">49.507R / -55.7802</span>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <span className="opacity-50">RECON VECTOR</span>
+          <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <span className="opacity-50">PROBE CONTROL</span>
+          <span className="text-[color:var(--hud-accent)]">AUTO</span>
+        </div>
       </div>
-      <div className="flex flex-col items-center gap-1">
-        <span className="opacity-50">RECON VECTOR</span>
-        <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+
+      {/* 1px separator */}
+      <div
+        className="w-48 h-px opacity-20 hidden md:block"
+        style={{ background: "var(--hud-accent)" }}
+        aria-hidden="true"
+      />
+
+      {/* sector status readout */}
+      <div
+        className={`font-mono tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 ${compact ? "text-[6px]" : "text-[7px]"}`}
+      >
+        {statusLine}
       </div>
-      <div className="flex flex-col items-center gap-1">
-        <span className="opacity-50">PROBE CONTROL</span>
-        <span className="text-[color:var(--hud-accent)]">AUTO</span>
-      </div>
+
+      {/* Gateway CTA — terminal command style, desktop only */}
+      {showCta && onRequestArLink && (
+        <button
+          type="button"
+          onClick={onRequestArLink}
+          className={`pointer-events-auto font-mono tracking-[0.22em] text-[color:var(--hud-accent)] opacity-70 hover:opacity-100 transition-opacity ${compact ? "text-[6px]" : "text-[7px]"}`}
+        >
+          {"> REQUEST_AR_LINK"}
+        </button>
+      )}
     </div>
   )
 }
+
+// ─── Desktop composition ──────────────────────────────────────────────────────
 
 function DesktopComposition({
   sectorIndex,
   sectorName,
   progress,
+  onRequestArLink,
 }: {
   sectorIndex: number
   sectorName: string
   progress: number
+  onRequestArLink?: () => void
 }) {
-  const panelTitle = PANEL_TITLES[Math.min(sectorIndex, 2)]
-
   return (
     <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
       <DesktopFrame />
@@ -249,38 +380,41 @@ function DesktopComposition({
         <TopStatusStrip sectorName={sectorName} progress={progress} />
       </div>
 
-      <div className="absolute left-3 top-1/2 w-36 -translate-y-1/2 opacity-90 lg:left-6 lg:w-40">
-        <div className="relative p-2.5 lg:p-3">
-          <CompositionBrackets />
-          <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
-            {panelTitle}
-          </div>
-          <div className="space-y-2 lg:space-y-2.5">
-            {METER_PLACEHOLDERS.map((meter) => (
-              <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} value={meter.value} />
-            ))}
-          </div>
-        </div>
-      </div>
+      <LeftScannerPanel sectorIndex={sectorIndex} />
 
-      <RightDiagnosticPanel />
+      <RightDiagnosticPanel sectorIndex={sectorIndex} />
 
       <div className="absolute inset-0 flex items-center justify-center">
         <ScanRing />
       </div>
 
-      <BottomCommandStrip />
+      {/* Reticle label — floats just below scan ring center */}
+      <ReticleLabel sectorIndex={sectorIndex} />
+
+      {/* pointer-events-auto wrapper so CTA is clickable through the aria-hidden overlay */}
+      <div className="pointer-events-auto">
+        <BottomCommandStrip
+          sectorIndex={sectorIndex}
+          onRequestArLink={onRequestArLink}
+        />
+      </div>
     </div>
   )
 }
 
+// ─── Mobile composition ───────────────────────────────────────────────────────
+
 function MobileComposition({
   sectorName,
   progress,
+  sectorIndex,
 }: {
   sectorName: string
   progress: number
+  sectorIndex: number
 }) {
+  const statusLine = BOTTOM_STATUS[Math.min(sectorIndex, 2)]
+
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col md:hidden" aria-hidden="true">
       <MobileFrame />
@@ -306,16 +440,28 @@ function MobileComposition({
         <ScanRing small />
       </div>
 
-      <BottomCommandStrip compact />
+      {/* Mobile bottom strip — status only (no CTA, mobile uses direct AR link) */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+        <div className="font-mono text-[6px] tracking-[0.22em] text-[color:var(--hud-accent)] opacity-40 whitespace-nowrap">
+          {statusLine}
+        </div>
+        <div className="flex gap-4 font-mono text-[6px] tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-50">
+          <span>49.507R / -55.7802</span>
+          <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+        </div>
+      </div>
     </div>
   )
 }
+
+// ─── Root export ──────────────────────────────────────────────────────────────
 
 export function ReconHudComposition({
   sectorIndex,
   isMobile,
   sectorName = "OBSERVATION",
   progress = 0,
+  onRequestArLink,
 }: ReconHudCompositionProps) {
   const safeIndex = Math.min(Math.max(0, sectorIndex), 2)
 
@@ -326,9 +472,16 @@ export function ReconHudComposition({
           sectorIndex={safeIndex}
           sectorName={sectorName}
           progress={progress}
+          onRequestArLink={onRequestArLink}
         />
       )}
-      {isMobile && <MobileComposition sectorName={sectorName} progress={progress} />}
+      {isMobile && (
+        <MobileComposition
+          sectorName={sectorName}
+          progress={progress}
+          sectorIndex={safeIndex}
+        />
+      )}
     </div>
   )
 }
