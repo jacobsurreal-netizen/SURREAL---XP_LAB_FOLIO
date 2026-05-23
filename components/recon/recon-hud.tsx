@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ReconHudComposition } from "./recon-hud-composition"
 
 import type { ReconTelemetry } from "./use-recon-telemetry"
@@ -65,19 +65,90 @@ function HudButtonCorners() {
 const hudActionBtn =
   "relative border border-[color:var(--hud-accent-dim)] px-4 py-2 font-mono text-xs tracking-[0.18em] text-[color:var(--hud-text)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
 
+const hudActionBtnDisabled =
+  "relative border border-[color:var(--hud-accent-dim)] px-4 py-2 font-mono text-xs tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-40 cursor-not-allowed"
+
+type GatewayTransferPhase = "preparing" | "ready"
+
+const TRANSFER_PROTOCOL_LINES = [
+  "VALIDATING TOKEN CHANNEL",
+  "ALIGNING PROBE ROUTE",
+  "STABILIZING AR HANDOFF",
+  "TRANSFER LINK READY",
+] as const
+
+const TRANSFER_STEP_MS = 450
+const TRANSFER_REDUCED_MOTION_MS = 300
+
 interface GatewayModalProps {
   open: boolean
   onClose: () => void
 }
 
 function GatewayModal({ open, onClose }: GatewayModalProps) {
+  const [transferPhase, setTransferPhase] = useState<GatewayTransferPhase>("preparing")
+  const [protocolStep, setProtocolStep] = useState(0)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  const clearTransferTimers = useCallback(() => {
+    for (const id of timersRef.current) {
+      clearTimeout(id)
+    }
+    timersRef.current = []
+  }, [])
+
+  const schedule = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms)
+    timersRef.current.push(id)
+  }, [])
+
+  useEffect(() => {
+    if (!open) {
+      clearTransferTimers()
+      return
+    }
+
+    setTransferPhase("preparing")
+    setProtocolStep(0)
+    clearTransferTimers()
+
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    if (reducedMotion) {
+      setProtocolStep(TRANSFER_PROTOCOL_LINES.length - 1)
+      schedule(() => setTransferPhase("ready"), TRANSFER_REDUCED_MOTION_MS)
+      return clearTransferTimers
+    }
+
+    for (let i = 1; i < TRANSFER_PROTOCOL_LINES.length; i++) {
+      const step = i
+      schedule(() => setProtocolStep(step), TRANSFER_STEP_MS * step)
+    }
+
+    schedule(() => setTransferPhase("ready"), TRANSFER_STEP_MS * TRANSFER_PROTOCOL_LINES.length)
+
+    return clearTransferTimers
+  }, [open, clearTransferTimers, schedule])
+
+  useEffect(() => clearTransferTimers, [clearTransferTimers])
+
   if (!open) return null
 
-  const statusRows = [
-    { label: "GATEWAY", value: "READY" },
-    { label: "PROBE", value: "STANDBY" },
-    { label: "TRACKING", value: "OFFLINE" },
-  ] as const
+  const isReady = transferPhase === "ready"
+
+  const statusRows = isReady
+    ? ([
+        { label: "GATEWAY", value: "READY" },
+        { label: "PROBE", value: "STANDBY" },
+        { label: "TRACKING", value: "OFFLINE" },
+      ] as const)
+    : ([
+        { label: "GATEWAY", value: "NEGOTIATING" },
+        { label: "PROBE", value: "STANDBY" },
+        { label: "TRACKING", value: "OFFLINE" },
+      ] as const)
 
   return (
     <div
@@ -93,37 +164,68 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
         <HudCornerBrackets />
 
         <div className="mb-4 font-mono text-[length:clamp(0.6rem,2vw,0.7rem)] tracking-[0.26em] text-[color:var(--hud-text-dim)]">
-          [ TRANSFER SESSION TO MOBILE PROBE ]
+          {isReady ? "[ TRANSFER SESSION TO MOBILE PROBE ]" : "[ PREPARING TRANSFER ]"}
         </div>
 
         <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--hud-text)] opacity-90">
           Observation Deck → Diagnostic Probe handoff
         </p>
 
-        <div
-          className="relative mb-4 bg-black/40 px-4 py-4"
-        >
-          <HudCornerBrackets compact />
-          <div className="space-y-3 text-center font-mono">
-            <p className="text-[10px] tracking-[0.28em] text-[color:var(--hud-accent)]">
-              TRANSFER LINK READY
+        {!isReady && (
+          <div className="mb-4 space-y-2 font-mono text-[9px] tracking-[0.2em] text-[color:var(--hud-text-dim)]">
+            <p className="text-[color:var(--hud-accent)] opacity-80">PROBE CHANNEL NEGOTIATING</p>
+            <p>
+              ROUTE LOCKING:{" "}
+              <span className="text-[color:var(--hud-text)] tabular-nums">{RECON_AR_URL}</span>
             </p>
-            <p className="text-[9px] tracking-[0.22em] text-[color:var(--hud-text-dim)]">
-              MOBILE PROBE ENDPOINT
-            </p>
-            <p
-              className="break-all text-[length:clamp(0.65rem,2.5vw,0.8rem)] tracking-[0.14em] text-[color:var(--hud-text)] tabular-nums"
-              style={{
-                textShadow: "0 0 10px color-mix(in srgb, var(--hud-glow) 35%, transparent)",
-              }}
-            >
-              {RECON_AR_URL}
-            </p>
-            <p className="text-[9px] tracking-[0.2em] text-[color:var(--hud-text-dim)]">
-              SCAN ROUTE: {RECON_AR_URL}
-            </p>
+            <ul className="space-y-1.5 pt-1">
+              {TRANSFER_PROTOCOL_LINES.map((line, index) => {
+                const isActive = index === protocolStep
+                const isComplete = index < protocolStep
+                return (
+                  <li
+                    key={line}
+                    className={
+                      isActive
+                        ? "text-[color:var(--hud-accent)] opacity-100"
+                        : isComplete
+                          ? "opacity-50"
+                          : "opacity-25"
+                    }
+                  >
+                    {line}
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="pt-1 opacity-70">PHYSICAL TOKEN REQUIRED</p>
           </div>
-        </div>
+        )}
+
+        {isReady && (
+          <div className="relative mb-4 bg-black/40 px-4 py-4">
+            <HudCornerBrackets compact />
+            <div className="space-y-3 text-center font-mono">
+              <p className="text-[10px] tracking-[0.28em] text-[color:var(--hud-accent)]">
+                [ TRANSFER LINK READY ]
+              </p>
+              <p className="text-[9px] tracking-[0.22em] text-[color:var(--hud-text-dim)]">
+                MOBILE PROBE ENDPOINT
+              </p>
+              <p
+                className="break-all text-[length:clamp(0.65rem,2.5vw,0.8rem)] tracking-[0.14em] text-[color:var(--hud-text)] tabular-nums"
+                style={{
+                  textShadow: "0 0 10px color-mix(in srgb, var(--hud-glow) 35%, transparent)",
+                }}
+              >
+                {RECON_AR_URL}
+              </p>
+              <p className="text-[9px] tracking-[0.2em] text-[color:var(--hud-text-dim)]">
+                SCAN ROUTE: {RECON_AR_URL}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mb-5 space-y-1.5 px-1 py-2">
           {statusRows.map((row) => (
@@ -138,14 +240,26 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
         </div>
 
         <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--hud-text-dim)]">
-          Open mobile scanner to continue recon on probe route
+          {isReady
+            ? "Open mobile scanner to continue recon on probe route"
+            : "Awaiting transfer link stabilization"}
         </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>
-            <HudButtonCorners />
-            &gt; OPEN_MOBILE_SCANNER
-          </a>
+          {isReady ? (
+            <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>
+              <HudButtonCorners />
+              &gt; OPEN_MOBILE_SCANNER
+            </a>
+          ) : (
+            <span
+              className={`${hudActionBtnDisabled} pointer-events-none text-center sm:flex-1`}
+              aria-disabled="true"
+            >
+              <HudButtonCorners />
+              &gt; OPEN_MOBILE_SCANNER
+            </span>
+          )}
 
           <button
             type="button"
