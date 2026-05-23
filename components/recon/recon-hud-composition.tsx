@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 import type { ReconTelemetry } from "./use-recon-telemetry"
 
 export interface ReconHudCompositionProps {
@@ -19,12 +21,6 @@ const RETICLE_LABELS = [
   "LOG_000 // DORMANT",
   "NODE_ALPHA // PARTIAL LOCK",
   "CONTACT WINDOW // READY",
-] as const
-
-const METER_PLACEHOLDERS = [
-  { label: "GRAVIMETRIC", width: "84%", value: "84%" },
-  { label: "FIELD RESOLUTION", width: "76%", value: "76%" },
-  { label: "SIGNAL LOCK", width: "88%", value: "88%" },
 ] as const
 
 const RIGHT_PANEL_DATA = [
@@ -56,6 +52,62 @@ const BOTTOM_STATUS = [
   "SINGLE VIEWPOINT INSUFFICIENT",
   "PHYSICAL TOKEN REQUIRED",
 ] as const
+
+function formatSessionTime(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+}
+
+function hasValidViewport(telemetry: ReconTelemetry | undefined): boolean {
+  return (
+    !!telemetry &&
+    telemetry.viewportWidth > 0 &&
+    telemetry.viewportHeight > 0
+  )
+}
+
+function formatViewportValue(
+  telemetry: ReconTelemetry | undefined,
+  displayReady: boolean,
+): string {
+  if (!displayReady || !hasValidViewport(telemetry)) return "--×--"
+  return `${telemetry!.viewportWidth}×${telemetry!.viewportHeight}`
+}
+
+function formatPointerTrace(
+  telemetry: ReconTelemetry | undefined,
+  displayReady: boolean,
+): string {
+  if (
+    !displayReady ||
+    !telemetry?.pointerActive ||
+    telemetry.pointerNormalizedX == null ||
+    telemetry.pointerNormalizedY == null
+  ) {
+    return "IDLE"
+  }
+  const pad = (n: number) => String(n).padStart(3, "0")
+  const x = pad(Math.round(telemetry.pointerNormalizedX * 100))
+  const y = pad(Math.round(telemetry.pointerNormalizedY * 100))
+  return `X ${x} / Y ${y}`
+}
+
+function formatSessionDisplay(
+  telemetry: ReconTelemetry | undefined,
+  displayReady: boolean,
+): string {
+  if (!displayReady || !telemetry) return "00:00"
+  return formatSessionTime(telemetry.sessionTimeSeconds)
+}
+
+function leftTelemetryRows(telemetry: ReconTelemetry | undefined, displayReady: boolean) {
+  return [
+    { label: "VIEWPORT", value: formatViewportValue(telemetry, displayReady) },
+    { label: "POINTER TRACE", value: formatPointerTrace(telemetry, displayReady) },
+    { label: "SESSION", value: formatSessionDisplay(telemetry, displayReady) },
+  ] as const
+}
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
 
@@ -252,18 +304,38 @@ function ReticleLabel({ sectorIndex }: { sectorIndex: number }) {
 
 // ─── Left scanner panel ───────────────────────────────────────────────────────
 
-function LeftScannerPanel({ sectorIndex }: { sectorIndex: number }) {
+function LeftScannerPanel({
+  sectorIndex,
+  telemetry,
+}: {
+  sectorIndex: number
+  telemetry?: ReconTelemetry
+}) {
+  const [displayReady, setDisplayReady] = useState(false)
+  useEffect(() => {
+    setDisplayReady(true)
+  }, [])
+
   const panelTitle = PANEL_TITLES[Math.min(sectorIndex, 2)]
+  const rows = leftTelemetryRows(telemetry, displayReady)
   return (
-    <div className="absolute left-3 top-1/2 w-36 -translate-y-1/2 opacity-90 lg:left-6 lg:w-40">
+    <div className="absolute left-3 top-1/2 w-48 -translate-y-1/2 opacity-90 lg:left-6 lg:w-56">
       <div className="relative p-2.5 lg:p-3">
         <CompositionBrackets />
         <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
           {panelTitle}
         </div>
         <div className="space-y-2 lg:space-y-2.5">
-          {METER_PLACEHOLDERS.map((meter) => (
-            <StaticMeterShell key={meter.label} label={meter.label} width={meter.width} value={meter.value} />
+          {rows.map((item) => (
+            <div
+              key={item.label}
+              className="flex items-baseline justify-between gap-2 font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
+            >
+              <span className="shrink-0">{item.label}</span>
+              <span className="shrink-0 whitespace-nowrap tabular-nums text-[color:var(--hud-accent)] opacity-80">
+                {item.value}
+              </span>
+            </div>
           ))}
         </div>
       </div>
@@ -391,11 +463,13 @@ function DesktopComposition({
   sectorName,
   progress,
   onRequestArLink,
+  telemetry,
 }: {
   sectorIndex: number
   sectorName: string
   progress: number
   onRequestArLink?: () => void
+  telemetry?: ReconTelemetry
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
@@ -405,7 +479,7 @@ function DesktopComposition({
         <TopStatusStrip sectorName={sectorName} progress={progress} />
       </div>
 
-      <LeftScannerPanel sectorIndex={sectorIndex} />
+      <LeftScannerPanel sectorIndex={sectorIndex} telemetry={telemetry} />
 
       <RightDiagnosticPanel sectorIndex={sectorIndex} />
 
@@ -504,6 +578,7 @@ export function ReconHudComposition({
           sectorName={displaySectorName}
           progress={displayProgress / 100}
           onRequestArLink={onRequestArLink}
+          telemetry={telemetry}
         />
       )}
       {isMobile && (
