@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react"
 import { ReconHudComposition } from "./recon-hud-composition"
 
+import type { ReconTelemetry } from "./use-recon-telemetry"
+
 interface ReconHUDProps {
   sectorIndex: number
   isMobile?: boolean
   sectorName?: string
   progress?: number
+  telemetry?: ReconTelemetry
 }
 
 const RECON_AR_URL = "/recon/ar"
@@ -158,7 +161,7 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
   )
 }
 
-export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: ReconHUDProps) {
+export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, telemetry }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
 
@@ -245,6 +248,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0 }: Re
           sectorName={sectorName}
           progress={progress}
           onRequestArLink={!isMobile ? () => setIsGatewayOpen(true) : undefined}
+          telemetry={telemetry}
         />
       </div>
 

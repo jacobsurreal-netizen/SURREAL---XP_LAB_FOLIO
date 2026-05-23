@@ -4,6 +4,7 @@ import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
 import { ReconHUD } from "./recon-hud"
+import { useReconTelemetry } from "./use-recon-telemetry"
 import { ReconOpticalOverlay } from "./recon-optical-overlay"
 import { useEffect, useState } from "react"
 import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
@@ -61,6 +62,8 @@ export function ReconShell({ children }: ReconShellProps) {
   const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"]
   const sectorName = SECTOR_NAMES[sectorIndex]
 
+  const telemetry = useReconTelemetry({ sectorIndex, sectorName, progress })
+
   return (
     <>
       <div className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none">
@@ -85,6 +88,7 @@ export function ReconShell({ children }: ReconShellProps) {
           isMobile={isMobile}
           sectorName={sectorName}
           progress={progress}
+          telemetry={telemetry}
         />
         <SoundLayer />
       </div>

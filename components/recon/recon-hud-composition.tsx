@@ -1,11 +1,14 @@
 "use client"
 
+import type { ReconTelemetry } from "./use-recon-telemetry"
+
 export interface ReconHudCompositionProps {
   sectorIndex: number
   isMobile?: boolean
   sectorName?: string
   progress?: number
   onRequestArLink?: () => void
+  telemetry?: ReconTelemetry
 }
 
 // ─── Sector-specific HUD data ───────────────────────────────────────────────
@@ -486,23 +489,27 @@ export function ReconHudComposition({
   sectorName = "OBSERVATION",
   progress = 0,
   onRequestArLink,
+  telemetry,
 }: ReconHudCompositionProps) {
-  const safeIndex = Math.min(Math.max(0, sectorIndex), 2)
+  // Prefer telemetry values if provided
+  const safeIndex = typeof telemetry?.sectorIndex === "number" ? telemetry.sectorIndex : Math.min(Math.max(0, sectorIndex), 2)
+  const displaySectorName = telemetry?.sectorName ?? sectorName
+  const displayProgress = typeof telemetry?.progressPercent === "number" ? telemetry.progressPercent : Math.round(progress * 100)
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
       {!isMobile && (
         <DesktopComposition
           sectorIndex={safeIndex}
-          sectorName={sectorName}
-          progress={progress}
+          sectorName={displaySectorName}
+          progress={displayProgress / 100}
           onRequestArLink={onRequestArLink}
         />
       )}
       {isMobile && (
         <MobileComposition
-          sectorName={sectorName}
-          progress={progress}
+          sectorName={displaySectorName}
+          progress={displayProgress / 100}
           sectorIndex={safeIndex}
         />
       )}
