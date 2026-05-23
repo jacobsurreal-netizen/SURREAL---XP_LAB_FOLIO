@@ -313,8 +313,18 @@ function GatewayModal({ open, onClose, onStartDirectAnalysis }: GatewayModalProp
 export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, telemetry }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
-  const { phase: directProtocolPhase, isActive: isDirectProtocolActive, startProtocol, acknowledgeReport } =
-    useReconDirectProtocol()
+  const {
+    phase: directProtocolPhase,
+    isActive: isDirectProtocolActive,
+    visitedSectors: directVisitedSectors,
+    sectorLabels: directSectorLabels,
+    resonanceProgress: directResonanceProgress,
+    decodeStep: directDecodeStep,
+    startProtocol,
+    acknowledgeReport,
+    onResonanceHoldStart,
+    onResonanceHoldEnd,
+  } = useReconDirectProtocol({ sectorIndex: safeSectorIndex })
 
   useEffect(() => {
     if (safeSectorIndex !== 2) {
@@ -413,7 +423,16 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
       )}
 
       {!isMobile && isDirectProtocolActive && (
-        <ReconDirectProtocolOverlay phase={directProtocolPhase} onAcknowledge={acknowledgeReport} />
+        <ReconDirectProtocolOverlay
+          phase={directProtocolPhase}
+          visitedSectors={directVisitedSectors}
+          sectorLabels={directSectorLabels}
+          resonanceProgress={directResonanceProgress}
+          decodeStep={directDecodeStep}
+          onAcknowledge={acknowledgeReport}
+          onResonanceHoldStart={onResonanceHoldStart}
+          onResonanceHoldEnd={onResonanceHoldEnd}
+        />
       )}
     </>
   )
