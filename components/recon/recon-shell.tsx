@@ -4,9 +4,11 @@ import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
 import { ReconHUD } from "./recon-hud"
+import { ReconInitOverlay } from "./recon-init-overlay"
 import { useReconTelemetry } from "./use-recon-telemetry"
 import { ReconOpticalOverlay } from "./recon-optical-overlay"
-import { useEffect, useState } from "react"
+import { useReconInitSequence } from "./use-recon-init-sequence"
+import { useEffect, useRef, useState } from "react"
 import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
 
 interface ReconShellProps {
@@ -14,6 +16,10 @@ interface ReconShellProps {
 }
 
 export function ReconShell({ children }: ReconShellProps) {
+  const { initPhase, bootStep, startBoot } = useReconInitSequence()
+  const initPhaseRef = useRef(initPhase)
+  initPhaseRef.current = initPhase
+
   const [progress, setProgress] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -40,6 +46,10 @@ export function ReconShell({ children }: ReconShellProps) {
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
+          if (initPhaseRef.current !== "ready") {
+            ticking = false
+            return
+          }
           const maxScroll = document.documentElement.scrollHeight - window.innerHeight
           const currentScroll = window.scrollY
           const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0
@@ -83,13 +93,18 @@ export function ReconShell({ children }: ReconShellProps) {
           />
         </div>
         <ReconOpticalOverlay />
-        <ReconHUD
-          sectorIndex={sectorIndex}
-          isMobile={isMobile}
-          sectorName={sectorName}
-          progress={progress}
-          telemetry={telemetry}
-        />
+        {initPhase === "ready" && (
+          <ReconHUD
+            sectorIndex={sectorIndex}
+            isMobile={isMobile}
+            sectorName={sectorName}
+            progress={progress}
+            telemetry={telemetry}
+          />
+        )}
+        {initPhase !== "ready" && (
+          <ReconInitOverlay phase={initPhase} bootStep={bootStep} onInitialize={startBoot} />
+        )}
         <SoundLayer />
       </div>
       <div className="relative z-0 w-full overflow-x-hidden min-h-screen pointer-events-none">
