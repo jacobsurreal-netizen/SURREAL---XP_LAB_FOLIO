@@ -1,7 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { ReconDirectProtocolOverlay } from "./recon-direct-protocol-overlay"
 import { ReconHudComposition } from "./recon-hud-composition"
+import { useReconDirectProtocol } from "./use-recon-direct-protocol"
 
 import type { ReconTelemetry } from "./use-recon-telemetry"
 
@@ -68,6 +70,9 @@ const hudActionBtn =
 const hudActionBtnDisabled =
   "relative border border-[color:var(--hud-accent-dim)] px-4 py-2 font-mono text-xs tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-40 cursor-not-allowed"
 
+const hudActionBtnSecondary =
+  "relative border border-[color:var(--hud-accent-dim)] px-4 py-2 font-mono text-xs tracking-[0.18em] text-[color:var(--hud-text-dim)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
+
 type GatewayTransferPhase = "preparing" | "ready"
 
 const TRANSFER_PROTOCOL_LINES = [
@@ -83,9 +88,10 @@ const TRANSFER_REDUCED_MOTION_MS = 300
 interface GatewayModalProps {
   open: boolean
   onClose: () => void
+  onStartDirectAnalysis: () => void
 }
 
-function GatewayModal({ open, onClose }: GatewayModalProps) {
+function GatewayModal({ open, onClose, onStartDirectAnalysis }: GatewayModalProps) {
   const [transferPhase, setTransferPhase] = useState<GatewayTransferPhase>("preparing")
   const [protocolStep, setProtocolStep] = useState(0)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -252,26 +258,48 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
           </p>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3">
           {isReady ? (
-            <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>
-              <HudButtonCorners />
-              &gt; OPEN_MOBILE_SCANNER
-            </a>
+            <>
+              <a href={RECON_AR_URL} className={`${hudActionBtn} text-center`}>
+                <HudButtonCorners />
+                &gt; OPEN_MOBILE_SCANNER
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  onStartDirectAnalysis()
+                  onClose()
+                }}
+                className={`${hudActionBtnSecondary} text-center`}
+              >
+                <HudButtonCorners />
+                &gt; RUN_DIRECT_ANALYSIS
+              </button>
+            </>
           ) : (
-            <span
-              className={`${hudActionBtnDisabled} pointer-events-none text-center sm:flex-1`}
-              aria-disabled="true"
-            >
-              <HudButtonCorners />
-              &gt; OPEN_MOBILE_SCANNER
-            </span>
+            <>
+              <span
+                className={`${hudActionBtnDisabled} pointer-events-none text-center`}
+                aria-disabled="true"
+              >
+                <HudButtonCorners />
+                &gt; OPEN_MOBILE_SCANNER
+              </span>
+              <span
+                className={`${hudActionBtnDisabled} pointer-events-none text-center`}
+                aria-disabled="true"
+              >
+                <HudButtonCorners />
+                &gt; RUN_DIRECT_ANALYSIS
+              </span>
+            </>
           )}
 
           <button
             type="button"
             onClick={onClose}
-            className={`${hudActionBtn} text-center text-[color:var(--hud-text-dim)] sm:flex-1`}
+            className={`${hudActionBtn} text-center text-[color:var(--hud-text-dim)]`}
           >
             <HudButtonCorners />
             &gt; CLOSE_CHANNEL
@@ -285,6 +313,8 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
 export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, telemetry }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
+  const { phase: directProtocolPhase, isActive: isDirectProtocolActive, startProtocol, acknowledgeReport } =
+    useReconDirectProtocol()
 
   useEffect(() => {
     if (safeSectorIndex !== 2) {
@@ -373,7 +403,17 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
         />
       </div>
 
-      {!isMobile && <GatewayModal open={isGatewayOpen} onClose={() => setIsGatewayOpen(false)} />}
+      {!isMobile && (
+        <GatewayModal
+          open={isGatewayOpen}
+          onClose={() => setIsGatewayOpen(false)}
+          onStartDirectAnalysis={startProtocol}
+        />
+      )}
+
+      {!isMobile && isDirectProtocolActive && (
+        <ReconDirectProtocolOverlay phase={directProtocolPhase} onAcknowledge={acknowledgeReport} />
+      )}
     </>
   )
 }
