@@ -351,8 +351,8 @@ function BottomCommandStrip({ compact, sectorIndex = 0 }: BottomCommandStripProp
         className={`flex ${spacing} font-mono tracking-[0.2em] text-[color:var(--hud-text-dim)] opacity-60`}
       >
         <div className="flex flex-col items-center gap-1">
-          <span className="opacity-50">COORDINATES</span>
-          <span className="text-[color:var(--hud-accent)]">49.507R / -55.7802</span>
+          <span className="opacity-50">ORIGIN VECTOR</span>
+          <span className="text-[color:var(--hud-accent)]">TOKEN-LOCKED</span>
         </div>
         <div className="flex flex-col items-center gap-1">
           <span className="opacity-50">RECON VECTOR</span>
@@ -470,8 +470,8 @@ function MobileComposition({
           </div>
         )}
         <div className="flex gap-4 font-mono text-[6px] tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-50">
-          <span>49.507R / -55.7802</span>
-          <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+          <span>ORIGIN VECTOR</span>
+          <span className="text-[color:var(--hud-accent)]">TOKEN-LOCKED</span>
         </div>
       </div>
     </div>
