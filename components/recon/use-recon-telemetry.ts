@@ -16,6 +16,11 @@ export type ReconTelemetry = {
   devicePixelRatio: number
   isMobile: boolean
   sessionTimeSeconds: number
+  pointerX: number | null
+  pointerY: number | null
+  pointerNormalizedX: number | null
+  pointerNormalizedY: number | null
+  pointerActive: boolean
 }
 
 export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
@@ -25,6 +30,11 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     dpr: typeof window !== "undefined" ? window.devicePixelRatio : 1,
   })
   const [sessionTime, setSessionTime] = useState(0)
+  const [pointer, setPointer] = useState<{
+    x: number | null
+    y: number | null
+    active: boolean
+  }>({ x: null, y: null, active: false })
   const timerRef = useRef<number | null>(null)
 
   // Update viewport on resize
@@ -47,6 +57,38 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     }
   }, [])
 
+  // Pointer trace (client-only)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    function handlePointerMove(event: PointerEvent) {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      const x = event.clientX
+      const y = event.clientY
+      const inside = x >= 0 && y >= 0 && x <= w && y <= h
+
+      if (!inside) {
+        setPointer({ x: null, y: null, active: false })
+        return
+      }
+
+      setPointer({ x, y, active: true })
+    }
+
+    function handlePointerLeave() {
+      setPointer({ x: null, y: null, active: false })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove)
+    document.documentElement.addEventListener("pointerleave", handlePointerLeave)
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+      document.documentElement.removeEventListener("pointerleave", handlePointerLeave)
+    }
+  }, [])
+
   // Session timer
   useEffect(() => {
     timerRef.current = window.setInterval(() => {
@@ -58,6 +100,10 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
   }, [])
 
   const isMobile = viewport.width < 768
+  const pointerNormalizedX =
+    pointer.x != null && viewport.width > 0 ? pointer.x / viewport.width : null
+  const pointerNormalizedY =
+    pointer.y != null && viewport.height > 0 ? pointer.y / viewport.height : null
 
   return {
     sectorIndex: input.sectorIndex,
@@ -69,5 +115,10 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     devicePixelRatio: viewport.dpr,
     isMobile,
     sessionTimeSeconds: sessionTime,
+    pointerX: pointer.x,
+    pointerY: pointer.y,
+    pointerNormalizedX,
+    pointerNormalizedY,
+    pointerActive: pointer.active,
   }
 }
