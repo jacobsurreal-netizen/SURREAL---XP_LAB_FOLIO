@@ -399,6 +399,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
           sectorName={sectorName}
           progress={progress}
           onRequestArLink={!isMobile ? () => setIsGatewayOpen(true) : undefined}
+          suppressGatewayCommand={isDirectProtocolActive}
           telemetry={telemetry}
         />
       </div>

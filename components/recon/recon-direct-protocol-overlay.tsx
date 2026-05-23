@@ -36,7 +36,7 @@ export function ReconDirectProtocolOverlay({ phase, onAcknowledge }: ReconDirect
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-[14vh] z-[125] flex justify-center px-4 md:bottom-[18vh]"
+      className="pointer-events-none fixed inset-x-0 bottom-[18vh] z-[125] flex translate-y-1 justify-center px-4 md:bottom-[22vh]"
       role="region"
       aria-label="Direct Observation Protocol"
     >

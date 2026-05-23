@@ -10,6 +10,7 @@ export interface ReconHudCompositionProps {
   sectorName?: string
   progress?: number
   onRequestArLink?: () => void
+  suppressGatewayCommand?: boolean
   telemetry?: ReconTelemetry
 }
 
@@ -466,12 +467,14 @@ function DesktopComposition({
   sectorName,
   progress,
   onRequestArLink,
+  suppressGatewayCommand,
   telemetry,
 }: {
   sectorIndex: number
   sectorName: string
   progress: number
   onRequestArLink?: () => void
+  suppressGatewayCommand?: boolean
   telemetry?: ReconTelemetry
 }) {
   return (
@@ -493,7 +496,7 @@ function DesktopComposition({
       {/* Reticle label — floats just below scan ring center */}
       <ReticleLabel sectorIndex={sectorIndex} />
 
-      {sectorIndex === 2 && onRequestArLink && (
+      {sectorIndex === 2 && onRequestArLink && !suppressGatewayCommand && (
         <GatewayCommandTrigger onRequestArLink={onRequestArLink} />
       )}
 
@@ -566,6 +569,7 @@ export function ReconHudComposition({
   sectorName = "OBSERVATION",
   progress = 0,
   onRequestArLink,
+  suppressGatewayCommand,
   telemetry,
 }: ReconHudCompositionProps) {
   // Prefer telemetry values if provided
@@ -581,6 +585,7 @@ export function ReconHudComposition({
           sectorName={displaySectorName}
           progress={displayProgress / 100}
           onRequestArLink={onRequestArLink}
+          suppressGatewayCommand={suppressGatewayCommand}
           telemetry={telemetry}
         />
       )}
