@@ -83,19 +83,31 @@ export function ReconDirectProtocolOverlay({
             </p>
             <div className="space-y-1.5 border-t border-[color:var(--hud-accent-dim)] pt-3 opacity-80">
               <div className="flex justify-between gap-4">
-                <span>SUBJECT</span>
-                <span className="text-[color:var(--hud-accent)]">DORMANT ANOMALY</span>
+                <span className="shrink-0">SUBJECT CLASS</span>
+                <span className="text-right text-[color:var(--hud-accent)]">TRANSDIMENSIONAL ARTIFACT</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>STATE</span>
+                <span className="text-right text-[color:var(--hud-accent)]">
+                  DORMANT / PARTIALLY RESPONSIVE
+                </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>ORIGIN VECTOR</span>
                 <span className="text-[color:var(--hud-accent)]">TOKEN-LOCKED</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span>STRUCTURAL MODEL</span>
-                <span className="text-[color:var(--hud-accent)]">INCOMPLETE</span>
+                <span className="shrink-0">FUNCTION TRACE</span>
+                <span className="text-right text-[color:var(--hud-accent)]">
+                  INTERFACE / BRIDGE / ANCHOR
+                </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span>RECOMMENDED ACTION</span>
+                <span>RESONANCE KEY</span>
+                <span className="tabular-nums text-[color:var(--hud-accent)]">F#4 // 370Hz</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="shrink-0">RECOMMENDED ACTION</span>
                 <span className="text-right text-[color:var(--hud-accent)]">
                   PHYSICAL TOKEN ALIGNMENT
                 </span>
