@@ -27,23 +27,26 @@ const RIGHT_PANEL_DATA = [
   // Sector 0 — Observation
   [
     { label: "FIELD WAVE", value: "DETECTED" },
-    { label: "BIO-SIGNATURE", value: "NEGATIVE" },
-    { label: "SPATIAL DIST", value: "0.003%" },
-    { label: "UPLINK", value: "STABLE" },
+    { label: "BIO-SIGNATURE", value: "NULL" },
+    { label: "SPATIAL DIST", value: "0.003% RISING" },
+    { label: "MATERIAL", value: "UNKNOWN" },
+    { label: "CONTAINMENT", value: "NOMINAL" },
   ],
   // Sector 1 — Analysis
   [
-    { label: "MEMBRANE READINGS", value: "UNSTABLE" },
+    { label: "GRAVIMETRIC WAVE", value: "FLUCTUATING" },
     { label: "OPTICAL MODEL", value: "DEGRADED" },
     { label: "VIEWPOINT COUNT", value: "INSUFFICIENT" },
-    { label: "TELEMETRY", value: "PARTIAL" },
+    { label: "MATERIAL COMP", value: "UNKNOWN" },
+    { label: "MEMBRANE", value: "UNSTABLE" },
   ],
   // Sector 2 — Gateway
   [
+    { label: "TOKEN CHANNEL", value: "REQUIRED" },
     { label: "PROBE ENDPOINT", value: "STANDBY" },
-    { label: "TRACKING", value: "OFFLINE" },
     { label: "AR LINK", value: "READY" },
-    { label: "TRANSFER", value: "PENDING" },
+    { label: "TRANSFER", value: "AVAILABLE" },
+    { label: "ORIGIN ACCESS", value: "LOCKED" },
   ],
 ] as const
 
@@ -430,12 +433,12 @@ function BottomCommandStrip({ compact, sectorIndex = 0 }: BottomCommandStripProp
           <span className="text-[color:var(--hud-accent)]">TOKEN-LOCKED</span>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <span className="opacity-50">RECON VECTOR</span>
-          <span className="text-[color:var(--hud-accent)]">NOMINAL</span>
+          <span className="opacity-50">RESONANCE</span>
+          <span className="text-[color:var(--hud-accent)]">F#4 // 370Hz</span>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <span className="opacity-50">PROBE CONTROL</span>
-          <span className="text-[color:var(--hud-accent)]">AUTO</span>
+          <span className="opacity-50">OPERATOR</span>
+          <span className="text-[color:var(--hud-accent)]">OBSERVER_CLASS</span>
         </div>
       </div>
 

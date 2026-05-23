@@ -1,7 +1,13 @@
 "use client"
 
 import type { ReconInitPhase } from "./use-recon-init-sequence"
-import { BOOT_LINES } from "./use-recon-init-sequence"
+
+export const BOOT_LINES = [
+  "ESTABLISHING SECURE LINK...",
+  "INITIALIZING OBSERVATION DECK...",
+  "SYNCING GRAVIMETRIC SENSORS...",
+  "LOCKING OPTICS...",
+] as const
 
 const initActionBtn =
   "relative border border-[color:var(--hud-accent-dim)] px-5 py-2.5 font-mono text-xs tracking-[0.2em] text-[color:var(--hud-text)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--hud-text)]"

@@ -245,6 +245,13 @@ function GatewayModal({ open, onClose }: GatewayModalProps) {
             : "Awaiting transfer link stabilization"}
         </p>
 
+        {isReady && (
+          <p className="mb-4 space-y-1 font-mono text-[8px] leading-relaxed tracking-[0.14em] text-[color:var(--hud-text-dim)] opacity-60">
+            <span className="block">DESKTOP OBSERVATION RETURNS PARTIAL STRUCTURAL DATA.</span>
+            <span className="block">PHYSICAL TOKEN REQUIRED FOR OPTICAL ALIGNMENT.</span>
+          </p>
+        )}
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {isReady ? (
             <a href={RECON_AR_URL} className={`${hudActionBtn} text-center sm:flex-1`}>

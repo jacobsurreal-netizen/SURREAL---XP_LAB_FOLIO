@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { BOOT_LINES } from "./recon-init-overlay"
+
 export type ReconInitPhase = "standby" | "booting" | "ready"
 
-export const BOOT_LINES = [
-  "LINKING VIEWPORT...",
-  "CALIBRATING TELEMETRY...",
-  "PROBE CHANNEL OPEN...",
-  "SYSTEM READY",
-] as const
+export { BOOT_LINES }
 
 const BOOT_STEP_MS = 625
 const REDUCED_MOTION_BOOT_MS = 300
