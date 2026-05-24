@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 
-import type { DirectProtocolPhase } from "./use-recon-direct-protocol"
+import type { DirectProtocolPhase, DirectProtocolMode } from "./use-recon-direct-protocol"
 import { DECODE_LINES } from "./use-recon-direct-protocol"
 
 const protocolActionBtn =
@@ -50,6 +50,8 @@ export interface ReconDirectProtocolOverlayProps {
   onAcknowledge: () => void
   onResonanceHoldStart: () => void
   onResonanceHoldEnd: () => void
+  mode?: DirectProtocolMode
+  confirmViewport?: () => void
 }
 
 export function ReconDirectProtocolOverlay({
@@ -61,6 +63,8 @@ export function ReconDirectProtocolOverlay({
   onAcknowledge,
   onResonanceHoldStart,
   onResonanceHoldEnd,
+  mode,
+  confirmViewport,
 }: ReconDirectProtocolOverlayProps) {
   if (phase === "idle") return null
 
@@ -120,6 +124,46 @@ export function ReconDirectProtocolOverlay({
           <div className="mt-4 flex justify-center">
             <button type="button" onClick={onAcknowledge} className={protocolActionBtn}>
               &gt; ACKNOWLEDGE_REPORT
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Default to desktop when mode not provided
+  const currentMode = mode ?? "desktop"
+
+  // Render calibrate UI for mobile mode when phase === "calibrate"
+  if (phase === "calibrate") {
+    return (
+      <div
+        className="pointer-events-auto fixed inset-0 z-[126] flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-[2px]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile Direct Observation Calibrate"
+      >
+        <div
+          className="relative w-full max-w-xs border border-[color:var(--hud-accent-dim)] bg-[#040b0a]/90 px-4 py-5 opacity-95 backdrop-blur-sm"
+          style={{ boxShadow: "0 0 24px color-mix(in srgb, var(--hud-glow) 20%, transparent)" }}
+        >
+          <ProtocolCornerBrackets />
+          <div className="space-y-3 font-mono text-[9px] tracking-[0.18em] text-[color:var(--hud-text-dim)] sm:text-[10px]">
+            <p className="text-center text-[color:var(--hud-accent)] opacity-90">[ MOBILE DIRECT OBSERVATION ]</p>
+            <div className="space-y-1.5 border-t border-[color:var(--hud-accent-dim)] pt-3 opacity-80">
+              <div className="text-center">CALIBRATE VIEWPORT</div>
+              <div className="text-center opacity-70">COMPACT PROBE MODE</div>
+              <div className="text-center opacity-60">VIEWPORT LOCK: <span className="text-[color:var(--hud-accent)]">ACTIVE</span></div>
+              <div className="text-center opacity-60">SINGLE VIEWPOINT — PARTIAL DATA ONLY</div>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => confirmViewport && confirmViewport()}
+              className={protocolActionBtn}
+            >
+              &gt; CONFIRM_VIEWPORT
             </button>
           </div>
         </div>
