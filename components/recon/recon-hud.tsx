@@ -312,6 +312,7 @@ function GatewayModal({ open, onClose, onStartDirectAnalysis }: GatewayModalProp
 
 export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, telemetry }: ReconHUDProps) {
   const safeSectorIndex = clampSectorIndex(sectorIndex)
+  const mode = isMobile ? "mobile" : "desktop"
   const [isGatewayOpen, setIsGatewayOpen] = useState(false)
   const {
     phase: directProtocolPhase,
@@ -324,7 +325,8 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
     acknowledgeReport,
     onResonanceHoldStart,
     onResonanceHoldEnd,
-  } = useReconDirectProtocol({ sectorIndex: safeSectorIndex })
+    confirmViewport,
+  } = useReconDirectProtocol({ sectorIndex: safeSectorIndex, mode })
 
   useEffect(() => {
     if (safeSectorIndex !== 2) {
@@ -381,7 +383,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
         Mobile sector 2: direct AR link replaces modal (no pointer-events issue on mobile).
         The composition's bottom strip carries the status. No card rendered.
       */}
-      {isMobile && safeSectorIndex === 2 && (
+      {isMobile && safeSectorIndex === 2 && !isDirectProtocolActive && (
         <div className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2">
           <a
             href={RECON_AR_URL}
@@ -396,6 +398,21 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
               &gt; ACTIVATE_SCANNER
             </span>
           </a>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={startProtocol}
+              className="group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent-dim)] bg-transparent px-5 py-2.5 text-center font-mono transition duration-200 hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
+            >
+              <HudButtonCorners />
+              <span className="relative block text-[length:clamp(0.68rem,3.5vw,0.82rem)] font-medium tracking-[0.18em] text-[color:var(--hud-text)]">
+                &gt; RUN_DIRECT_ANALYSIS
+              </span>
+            </button>
+            <span className="font-mono text-[7px] tracking-[0.22em] text-[color:var(--hud-text-dim)] opacity-70">
+              PARTIAL OBSERVATION PROTOCOL
+            </span>
+          </div>
           <span className="font-mono text-[7px] tracking-[0.22em] text-[color:var(--hud-text-dim)] opacity-70">
             PHYSICAL TOKEN REQUIRED
           </span>
@@ -422,7 +439,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
         />
       )}
 
-      {!isMobile && isDirectProtocolActive && (
+      {isDirectProtocolActive && (
         <ReconDirectProtocolOverlay
           phase={directProtocolPhase}
           visitedSectors={directVisitedSectors}
@@ -432,6 +449,8 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
           onAcknowledge={acknowledgeReport}
           onResonanceHoldStart={onResonanceHoldStart}
           onResonanceHoldEnd={onResonanceHoldEnd}
+          mode={mode}
+          confirmViewport={confirmViewport}
         />
       )}
     </>

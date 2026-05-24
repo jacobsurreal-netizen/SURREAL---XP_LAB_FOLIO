@@ -226,8 +226,9 @@ export function ReconDirectProtocolOverlay({
             <div className="flex justify-center">
               <button
                 type="button"
-                className={protocolActionBtn}
+                className={`${protocolActionBtn} select-none touch-none [-webkit-user-select:none] [-webkit-touch-callout:none]`}
                 onPointerDown={(e) => {
+                  e.preventDefault()
                   e.currentTarget.setPointerCapture(e.pointerId)
                   onResonanceHoldStart()
                 }}
@@ -239,6 +240,8 @@ export function ReconDirectProtocolOverlay({
                 }}
                 onPointerLeave={onResonanceHoldEnd}
                 onPointerCancel={onResonanceHoldEnd}
+                onContextMenu={(event) => event.preventDefault()}
+                onDragStart={(event) => event.preventDefault()}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault()
