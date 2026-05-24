@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
+export type DirectProtocolMode = "desktop" | "mobile"
 export type DirectProtocolPhase =
   | "idle"
   | "viewpoints"
   | "resonance"
   | "decoding"
   | "report"
+  | "calibrate"
 
 export const DECODE_LINES = [
   "ALIGNING PARTIAL MODEL...",
@@ -31,11 +33,13 @@ function prefersReducedMotion() {
   )
 }
 
+
 export interface UseReconDirectProtocolOptions {
   sectorIndex: number
+  mode?: DirectProtocolMode
 }
 
-export function useReconDirectProtocol({ sectorIndex }: UseReconDirectProtocolOptions) {
+export function useReconDirectProtocol({ sectorIndex, mode = "desktop" }: UseReconDirectProtocolOptions) {
   const [phase, setPhase] = useState<DirectProtocolPhase>("idle")
   const [visitedSectors, setVisitedSectors] = useState<[boolean, boolean, boolean]>([
     false,
@@ -108,11 +112,24 @@ export function useReconDirectProtocol({ sectorIndex }: UseReconDirectProtocolOp
     setDecodeStep(0)
   }, [])
 
+
   const startProtocol = useCallback(() => {
     clearAll()
     resetProtocolState()
-    setPhase("viewpoints")
-  }, [clearAll, resetProtocolState])
+    if (mode === "mobile") {
+      setPhase("calibrate")
+    } else {
+      setPhase("viewpoints")
+    }
+  }, [clearAll, resetProtocolState, mode])
+
+  // Only for mobile mode: confirmViewport transitions from calibrate to resonance
+  const confirmViewport = useCallback(() => {
+    if (mode === "mobile" && phaseRef.current === "calibrate") {
+      setPhase("resonance")
+      setResonanceProgress(0)
+    }
+  }, [mode])
 
   const acknowledgeReport = useCallback(() => {
     clearAll()
@@ -120,8 +137,10 @@ export function useReconDirectProtocol({ sectorIndex }: UseReconDirectProtocolOp
     setPhase("idle")
   }, [clearAll, resetProtocolState])
 
+
+  // Sector visit tracking only for desktop/viewpoints
   useEffect(() => {
-    if (phase !== "viewpoints") return
+    if (!(mode === "desktop" && phase === "viewpoints")) return
 
     const index = clampSectorIndex(sectorIndex)
     setVisitedSectors((prev) => {
@@ -130,15 +149,16 @@ export function useReconDirectProtocol({ sectorIndex }: UseReconDirectProtocolOp
       next[index] = true
       return next
     })
-  }, [phase, sectorIndex])
+  }, [phase, sectorIndex, mode])
+
 
   useEffect(() => {
-    if (phase !== "viewpoints") return
+    if (!(mode === "desktop" && phase === "viewpoints")) return
     if (visitedSectors.every(Boolean)) {
       setPhase("resonance")
       setResonanceProgress(0)
     }
-  }, [phase, visitedSectors])
+  }, [phase, visitedSectors, mode])
 
   const onResonanceHoldStart = useCallback(() => {
     if (phaseRef.current !== "resonance") return
@@ -193,5 +213,7 @@ export function useReconDirectProtocol({ sectorIndex }: UseReconDirectProtocolOp
     acknowledgeReport,
     onResonanceHoldStart,
     onResonanceHoldEnd,
+    confirmViewport,
+    mode,
   }
 }
