@@ -12,67 +12,72 @@ import { useEffect, useRef, useState } from "react"
 import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
 
 interface ReconShellProps {
-  children: React.ReactNode
+  children: React.ReactNode;
+  bypassInit?: boolean;
 }
 
-export function ReconShell({ children }: ReconShellProps) {
-  const { initPhase, bootStep, startBoot } = useReconInitSequence()
-  const initPhaseRef = useRef(initPhase)
-  initPhaseRef.current = initPhase
+export function ReconShell({ children, bypassInit = false }: ReconShellProps) {
+  const { initPhase, bootStep, startBoot } = useReconInitSequence();
+  const initPhaseRef = useRef(initPhase);
+  initPhaseRef.current = initPhase;
 
-  const [progress, setProgress] = useState(0)
-  const [isMobile, setIsMobile] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [progress, setProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const smoothedProgress = useSmoothedProgress(progress, {
     lerpFactor: 0.015,
     epsilon: 0.0005,
-  })
+  });
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true);
     if (typeof window !== "undefined") {
       const checkMobile = () => {
-        setIsMobile(window.matchMedia("(max-width: 768px)").matches)
-      }
-      checkMobile()
-      window.addEventListener("resize", checkMobile)
-      return () => window.removeEventListener("resize", checkMobile)
+        setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+      };
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    let ticking = false
+    let ticking = false;
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (initPhaseRef.current !== "ready") {
-            ticking = false
-            return
+          // If bypassInit, always allow scroll/progress
+          if (!bypassInit && initPhaseRef.current !== "ready") {
+            ticking = false;
+            return;
           }
-          const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-          const currentScroll = window.scrollY
-          const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0
-          setProgress(newProgress)
-          ticking = false
-        })
-        ticking = true
+          const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+          const currentScroll = window.scrollY;
+          const newProgress = maxScroll > 0 ? Math.max(0, Math.min(1, currentScroll / maxScroll)) : 0;
+          setProgress(newProgress);
+          ticking = false;
+        });
+        ticking = true;
       }
-    }
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    handleScroll()
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [bypassInit]);
 
   // Desktop/mobile sector logic
-  const mode = "COLOR"
-  let sectorIndex = 0
-  if (progress >= 0.333 && progress < 0.666) sectorIndex = 1
-  if (progress >= 0.666) sectorIndex = 2
-  const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"]
-  const sectorName = SECTOR_NAMES[sectorIndex]
+  const mode = "COLOR";
+  let sectorIndex = 0;
+  if (progress >= 0.333 && progress < 0.666) sectorIndex = 1;
+  if (progress >= 0.666) sectorIndex = 2;
+  const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"];
+  const sectorName = SECTOR_NAMES[sectorIndex];
 
-  const telemetry = useReconTelemetry({ sectorIndex, sectorName, progress })
+  const telemetry = useReconTelemetry({ sectorIndex, sectorName, progress });
+
+  // If not bypassing INIT, show INIT overlay until ready
+  const showInit = !bypassInit && initPhase !== "ready";
 
   return (
     <>
@@ -93,7 +98,7 @@ export function ReconShell({ children }: ReconShellProps) {
           />
         </div>
         <ReconOpticalOverlay />
-        {initPhase === "ready" && (
+        {!showInit && (
           <ReconHUD
             sectorIndex={sectorIndex}
             isMobile={isMobile}
@@ -102,7 +107,7 @@ export function ReconShell({ children }: ReconShellProps) {
             telemetry={telemetry}
           />
         )}
-        {initPhase !== "ready" && (
+        {showInit && (
           <ReconInitOverlay phase={initPhase} bootStep={bootStep} onInitialize={startBoot} />
         )}
         <SoundLayer />
