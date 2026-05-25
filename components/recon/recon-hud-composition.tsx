@@ -97,6 +97,37 @@ function formatPointerTrace(
   return `X ${x} / Y ${y}`
 }
 
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function getMobileMeterValues(
+  telemetry: ReconTelemetry | undefined,
+  sectorIndex: number,
+  progress: number,
+) {
+  if (!telemetry) {
+    return {
+      gravimetric: undefined,
+      fieldRes: undefined,
+    }
+  }
+
+  const timePhase = ((telemetry.sessionTimeSeconds % 90) / 90)
+  const progressFactor = Math.max(0, Math.min(1, progress))
+  const pixelFactor = Math.min(Math.max(telemetry.devicePixelRatio ?? 1, 1), 3)
+
+  const gravBase = 80 + sectorIndex * 4
+  const gravValue = Math.round(gravBase + timePhase * 4 + progressFactor * 2 + (pixelFactor - 1) * 1)
+  const gravimetric = `${clampNumber(gravValue, 80, 94)}%`
+
+  const fieldBase = 70 + sectorIndex * 2
+  const fieldValue = Math.round(fieldBase + progressFactor * 10 + timePhase * 4)
+  const fieldRes = `${clampNumber(fieldValue, 70, 88)}%`
+
+  return { gravimetric, fieldRes }
+}
+
 function formatSessionDisplay(
   telemetry: ReconTelemetry | undefined,
   displayReady: boolean,
@@ -105,11 +136,38 @@ function formatSessionDisplay(
   return formatSessionTime(telemetry.sessionTimeSeconds)
 }
 
-function leftTelemetryRows(telemetry: ReconTelemetry | undefined, displayReady: boolean) {
+function formatDeviceClock(deviceClock: string | undefined, displayReady: boolean) {
+  if (!displayReady || !deviceClock) return "--:--:--"
+  return deviceClock
+}
+
+function formatClockDate(d: Date) {
+  const hh = String(d.getHours()).padStart(2, "0")
+  const mm = String(d.getMinutes()).padStart(2, "0")
+  const ss = String(d.getSeconds()).padStart(2, "0")
+  return `${hh}:${mm}:${ss}`
+}
+
+function getDesktopTelemetryRows(
+  telemetry: ReconTelemetry | undefined,
+  displayReady: boolean,
+) {
   return [
     { label: "VIEWPORT", value: formatViewportValue(telemetry, displayReady) },
     { label: "POINTER TRACE", value: formatPointerTrace(telemetry, displayReady) },
     { label: "SESSION", value: formatSessionDisplay(telemetry, displayReady) },
+  ] as const
+}
+
+function getMobileTelemetryRows(
+  telemetry: ReconTelemetry | undefined,
+  displayReady: boolean,
+  deviceClock?: string,
+) {
+  return [
+    { label: "VIEWPORT", value: formatViewportValue(telemetry, displayReady) },
+    { label: "DEVICE CLOCK", value: formatDeviceClock(deviceClock, displayReady) },
+    { label: "PROBE UPTIME", value: formatSessionDisplay(telemetry, displayReady) },
   ] as const
 }
 
@@ -321,7 +379,7 @@ function LeftScannerPanel({
   }, [])
 
   const panelTitle = PANEL_TITLES[Math.min(sectorIndex, 2)]
-  const rows = leftTelemetryRows(telemetry, displayReady)
+  const rows = getDesktopTelemetryRows(telemetry, displayReady)
   return (
     <div className="absolute left-3 top-1/2 w-48 -translate-y-1/2 opacity-90 lg:left-6 lg:w-56">
       <div className="relative p-2.5 lg:p-3">
@@ -513,12 +571,39 @@ function MobileComposition({
   sectorName,
   progress,
   sectorIndex,
+  telemetry,
 }: {
   sectorName: string
   progress: number
   sectorIndex: number
+  telemetry?: ReconTelemetry
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [displayReady, setDisplayReady] = useState(false)
+  const [deviceClock, setDeviceClock] = useState<string>("--:--:--")
+
+  useEffect(() => {
+    setDisplayReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!displayReady) return
+    let mounted = true
+    const updateClock = () => {
+      if (!mounted) return
+      setDeviceClock(formatClockDate(new Date()))
+    }
+    updateClock()
+    const id = setInterval(updateClock, 1000)
+    return () => {
+      mounted = false
+      clearInterval(id)
+    }
+  }, [displayReady])
+
   const statusLine = BOTTOM_STATUS[Math.min(sectorIndex, 2)]
+  const { gravimetric, fieldRes } = getMobileMeterValues(telemetry, sectorIndex, progress)
+  const telemetryRows = getMobileTelemetryRows(telemetry, displayReady, deviceClock)
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col md:hidden" aria-hidden="true">
@@ -532,12 +617,55 @@ function MobileComposition({
           <TopStatusStrip sectorName={sectorName} progress={progress} compact />
         </div>
 
-        <div className="relative p-2.5 opacity-90">
+        <div className="relative p-2.5 opacity-90 pointer-events-auto z-20">
           <CompositionBrackets compact />
           <div className="grid grid-cols-2 gap-3">
-            <StaticMeterShell label="GRAVIMETRIC" width="84%" value="84%" compact />
-            <StaticMeterShell label="FIELD RES." width="76%" value="76%" compact />
+            <StaticMeterShell
+              label="GRAVIMETRIC"
+              width={gravimetric || "0%"}
+              value={displayReady && gravimetric ? gravimetric : "--%"}
+              compact
+            />
+            <StaticMeterShell
+              label="FIELD RES."
+              width={fieldRes || "0%"}
+              value={displayReady && fieldRes ? fieldRes : "--%"}
+              compact
+            />
           </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[6px] tracking-[0.22em] text-[color:var(--hud-text-dim)] uppercase opacity-80">
+                TELEMETRY
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDrawerOpen((open) => !open)}
+              className="pointer-events-auto relative z-20 select-none touch-manipulation [-webkit-user-select:none] [-webkit-touch-callout:none] font-mono text-[6px] tracking-[0.22em] text-[color:var(--hud-accent)] uppercase"
+            >
+              {drawerOpen ? "COLLAPSE" : "EXPAND"}
+            </button>
+          </div>
+
+          {drawerOpen && (
+            <div className="mt-3 rounded border border-[color:var(--hud-accent-dim)] bg-[#040b0a]/80 p-3 text-[7px] tracking-[0.18em] text-[color:var(--hud-text-dim)] opacity-90">
+              <div className="space-y-2">
+                {telemetryRows.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between font-mono text-[7px] tracking-[0.18em]"
+                  >
+                    <span>{item.label}</span>
+                    <span className="tabular-nums text-[color:var(--hud-accent)] opacity-80">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -594,6 +722,7 @@ export function ReconHudComposition({
           sectorName={displaySectorName}
           progress={displayProgress / 100}
           sectorIndex={safeIndex}
+          telemetry={telemetry}
         />
       )}
     </div>
