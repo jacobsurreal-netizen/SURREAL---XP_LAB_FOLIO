@@ -493,7 +493,7 @@ function BottomCommandStrip({ compact, sectorIndex = 0 }: BottomCommandStripProp
         </div>
         <div className="flex flex-col items-center gap-1">
           <span className="opacity-50">RESONANCE</span>
-          <span className="text-[color:var(--hud-accent)]">F#4 // 370Hz</span>
+          <span className="text-[color:var(--hud-accent)]">SYNC_FREQ</span>
         </div>
         <div className="flex flex-col items-center gap-1">
           <span className="opacity-50">OPERATOR</span>

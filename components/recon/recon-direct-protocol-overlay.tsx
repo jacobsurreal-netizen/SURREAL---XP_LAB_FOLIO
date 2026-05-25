@@ -108,7 +108,9 @@ export function ReconDirectProtocolOverlay({
               </div>
               <div className="flex justify-between gap-4">
                 <span>RESONANCE KEY</span>
-                <span className="tabular-nums text-[color:var(--hud-accent)]">F#4 // 370Hz</span>
+                <span className="tabular-nums text-[color:var(--hud-accent)]">
+                  {mode === "mobile" ? "FREQ - F#4" : "F#4 // 369.9Hz"}
+                </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="shrink-0">RECOMMENDED ACTION</span>
@@ -215,7 +217,7 @@ export function ReconDirectProtocolOverlay({
             <p className="text-center text-[color:var(--hud-accent)] opacity-80">
               [ RESONANCE STABILIZATION ]
             </p>
-            <p className="text-center text-[color:var(--hud-accent)] opacity-60">F#4 // 370Hz</p>
+            <p className="text-center text-[color:var(--hud-accent)] opacity-60">SYNC_FREQ // PENDING</p>
             <div className="relative h-px w-full overflow-hidden bg-[color:var(--hud-accent-dim)]">
               <div
                 className="absolute inset-y-0 left-0 bg-[color:var(--hud-accent)] opacity-50 transition-[width] duration-75"
