@@ -2,35 +2,102 @@
 import { useEffect, useRef, useState } from "react";
 import { ReconShell } from "../recon/recon-shell";
 
-// Timeline overlays
-const TIMELINE = [
-  { t: 0, lines: ["SYS.CORE // ONLINE", "LOG_000 // DORMANT"] },
-  { t: 2.0, lines: ["ALIGNING OPTICS...", "SIGNAL TRACE: PARTIAL"] },
-  { t: 4.5, lines: ["FREQ: 369.9 Hz [UNSTABLE]", "RESONANCE DRIFT DETECTED"] },
-  { t: 6.5, lines: ["OPTICAL ALIGNMENT: FAILED", ""] },
-  { t: 7.0, lines: ["SINGLE VIEWPOINT INSUFFICIENT.", ""] },
-  { t: 8.5, lines: ["", ""] }, // blackout
+
+// Deterministic 9s timeline driver
+const CAPTURE_TIMELINE = [
+  {
+    phase: "boot",
+    start: 0.0,
+    end: 1.5,
+    label: "SYS.CORE // ONLINE",
+    subline: "LOG_000 // DORMANT",
+    glitch: false,
+    blackout: false,
+  },
+  {
+    phase: "aligning",
+    start: 1.5,
+    end: 3.5,
+    label: "ALIGNING OPTICS...",
+    subline: "SIGNAL TRACE: PARTIAL",
+    glitch: false,
+    blackout: false,
+  },
+  {
+    phase: "unstable",
+    start: 3.5,
+    end: 5.8,
+    label: "FREQ: 369.9 Hz [UNSTABLE]",
+    subline: "RESONANCE DRIFT DETECTED",
+    glitch: false,
+    blackout: false,
+  },
+  {
+    phase: "fail",
+    start: 5.8,
+    end: 6.5,
+    label: "OPTICAL ALIGNMENT: FAILED",
+    subline: "",
+    glitch: true,
+    blackout: true,
+  },
+  {
+    phase: "insufficient",
+    start: 6.5,
+    end: 8.5,
+    label: "SINGLE VIEWPOINT INSUFFICIENT.",
+    subline: "ORIGIN VECTOR: TOKEN-LOCKED",
+    glitch: false,
+    blackout: false,
+  },
+  {
+    phase: "signal_loss",
+    start: 8.5,
+    end: 9.0,
+    label: "SIGNAL LOSS",
+    subline: "",
+    glitch: false,
+    blackout: true,
+  },
 ];
 
-function getTimelineLines(time: number): [string, string] {
-  for (let i = TIMELINE.length - 1; i >= 0; --i) {
-    if (time >= TIMELINE[i].t) {
-      const [a, b] = TIMELINE[i].lines;
-      return [a, b];
+function getCaptureTimelineState(t: number) {
+  for (let i = 0; i < CAPTURE_TIMELINE.length; ++i) {
+    const entry = CAPTURE_TIMELINE[i];
+    if (t >= entry.start && t < entry.end) {
+      return {
+        elapsedSeconds: t,
+        capturePhase: entry.phase,
+        captureProgress: Math.min(t / 9, 1),
+        captureLabel: entry.label,
+        captureSubline: entry.subline,
+        glitchActive: entry.glitch,
+        blackoutActive: entry.blackout,
+      };
     }
   }
-  return ["", ""];
+  // After timeline, treat as blackout
+  return {
+    elapsedSeconds: t,
+    capturePhase: "done",
+    captureProgress: 1,
+    captureLabel: "SIGNAL LOST",
+    captureSubline: "",
+    glitchActive: false,
+    blackoutActive: true,
+  };
 }
 
 export default function ReconCaptureStage() {
-  const [time, setTime] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
 
+  // Timeline driver: 0–9s, deterministic, no random
   useEffect(() => {
     let start = performance.now();
     function step(now: number) {
       const t = Math.min((now - start) / 1000, 9);
-      setTime(t);
+      setElapsed(t);
       if (t < 9) rafRef.current = requestAnimationFrame(step);
     }
     rafRef.current = requestAnimationFrame(step);
@@ -39,14 +106,13 @@ export default function ReconCaptureStage() {
     };
   }, []);
 
-  // blackout at end
-  if (time >= 8.5) {
+  // Timeline state for overlays
+  const timeline = getCaptureTimelineState(elapsed);
+
+  // Blackout at end
+  if (timeline.blackoutActive && timeline.capturePhase === "signal_loss") {
     return <div className="fixed inset-0 bg-[#040b0a]" />;
   }
-
-  // Timeline text (dual line)
-  const [mainText, subText] = getTimelineLines(time);
-  const isGlitch = time >= 6.5 && time < 7.0;
 
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
@@ -83,22 +149,22 @@ export default function ReconCaptureStage() {
           <div className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(0,172,108,0.09)_0_2px,transparent_2px_8px)]" />
         </div>
         {/* Timeline text overlay */}
-        {(mainText || subText) && (
+        {(timeline.captureLabel || timeline.captureSubline) && (
           <div className="absolute left-1/2 top-[68%] z-40 w-full flex flex-col items-center" style={{ transform: 'translateX(-50%)' }}>
-            {mainText && (
+            {timeline.captureLabel && (
               <div className="font-mono text-[18px] md:text-[22px] tracking-[0.22em] text-[#2aff84] drop-shadow-[0_0_8px_#00ac6c88] text-center uppercase" style={{ letterSpacing: '0.18em' }}>
-                {mainText}
+                {timeline.captureLabel}
               </div>
             )}
-            {subText && (
+            {timeline.captureSubline && (
               <div className="font-mono text-[12px] md:text-[14px] tracking-[0.18em] text-[#00ac6c] opacity-80 text-center mt-1 uppercase" style={{ letterSpacing: '0.13em' }}>
-                {subText}
+                {timeline.captureSubline}
               </div>
             )}
           </div>
         )}
         {/* Blackout/glitch overlay */}
-        {isGlitch && (
+        {timeline.glitchActive && (
           <div className="absolute inset-0 z-50 bg-[#05070A] opacity-80 animate-pulse" style={{ mixBlendMode: 'screen' }} />
         )}
       </div>
