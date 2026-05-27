@@ -88,6 +88,7 @@ function getCaptureTimelineState(t: number) {
   };
 }
 
+
 export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -114,6 +115,10 @@ export default function ReconCaptureStage() {
     return <div className="fixed inset-0 bg-[#040b0a]" />;
   }
 
+  // Synthetic meter values (timeline-driven, simple animation)
+  const gravimetric = `${Math.round(80 + 8 * timeline.captureProgress)}%`;
+  const fieldRes = `${Math.round(70 + 10 * timeline.captureProgress)}%`;
+
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
   // Centered, with dark void outside
@@ -139,18 +144,49 @@ export default function ReconCaptureStage() {
             <ForceMobileWidth />
           </ReconShell>
         </div>
-        {/* Capture overlays */}
-        {/* Blur/scrim overlay */}
-        <div className="pointer-events-none absolute inset-0 z-30" style={{backdropFilter:'blur(2.5px)',WebkitBackdropFilter:'blur(2.5px)',opacity:0.18}} />
-        {/* Vignette overlay */}
-        <div className="pointer-events-none absolute inset-0 z-30" style={{background:'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 60%, #040b0a 100%)',opacity:0.38}} />
-        {/* Scanline overlay */}
-        <div className="pointer-events-none absolute inset-0 z-30" style={{opacity:0.10}}>
+        {/* Scanline/vignette overlays (z-20) */}
+        <div className="pointer-events-none absolute inset-0 z-20" style={{opacity:0.10}}>
           <div className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(0,172,108,0.09)_0_2px,transparent_2px_8px)]" />
         </div>
-        {/* Timeline text overlay */}
+        <div className="pointer-events-none absolute inset-0 z-20" style={{background:'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 60%, #040b0a 100%)',opacity:0.38}} />
+        <div className="pointer-events-none absolute inset-0 z-20" style={{backdropFilter:'blur(2.5px)',WebkitBackdropFilter:'blur(2.5px)',opacity:0.18}} />
+
+        {/* Capture-only HUD overlay (z-30) */}
+        <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between">
+          {/* Top strip */}
+          <div className="w-full flex flex-col items-center pt-3 select-none">
+            <div className="font-mono text-[10px] tracking-[0.22em] text-[#2affef] opacity-80 uppercase" style={{letterSpacing:'0.18em'}}>
+              DEEP_SPACE_RECON
+            </div>
+            <div className="flex gap-4 mt-1">
+              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-60 uppercase">MODE: CAPTURE</span>
+              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-60 uppercase">SIGNAL: PARTIAL</span>
+            </div>
+          </div>
+          {/* Compact meters */}
+          <div className="flex flex-row justify-center gap-6 mt-2">
+            <div className="flex flex-col items-center">
+              <span className="font-mono text-[7px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">GRAVIMETRIC</span>
+              <span className="font-mono text-[10px] tracking-[0.18em] text-[#2affef] opacity-80 tabular-nums">{gravimetric}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="font-mono text-[7px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">FIELD RES.</span>
+              <span className="font-mono text-[10px] tracking-[0.18em] text-[#2affef] opacity-80 tabular-nums">{fieldRes}</span>
+            </div>
+          </div>
+          {/* Bottom strip */}
+          <div className="w-full flex flex-col items-center pb-3 select-none">
+            <div className="flex flex-col gap-0.5 items-center">
+              <span className="font-mono text-[9px] tracking-[0.18em] text-[#2affef] opacity-70 uppercase">LOG_000 // DORMANT</span>
+              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">ORIGIN VECTOR: TOKEN-LOCKED</span>
+              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">SIGNAL TRACE: PARTIAL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline text overlay (z-30, above HUD meters) */}
         {(timeline.captureLabel || timeline.captureSubline) && (
-          <div className="absolute left-1/2 top-[68%] z-40 w-full flex flex-col items-center" style={{ transform: 'translateX(-50%)' }}>
+          <div className="absolute left-1/2 top-[68%] z-30 w-full flex flex-col items-center pointer-events-none" style={{ transform: 'translateX(-50%)' }}>
             {timeline.captureLabel && (
               <div className="font-mono text-[18px] md:text-[22px] tracking-[0.22em] text-[#2aff84] drop-shadow-[0_0_8px_#00ac6c88] text-center uppercase" style={{ letterSpacing: '0.18em' }}>
                 {timeline.captureLabel}
@@ -163,9 +199,10 @@ export default function ReconCaptureStage() {
             )}
           </div>
         )}
-        {/* Blackout/glitch overlay */}
+
+        {/* Blackout/glitch overlay (z-40) */}
         {timeline.glitchActive && (
-          <div className="absolute inset-0 z-50 bg-[#05070A] opacity-80 animate-pulse" style={{ mixBlendMode: 'screen' }} />
+          <div className="absolute inset-0 z-40 bg-[#05070A] opacity-80 animate-pulse" style={{ mixBlendMode: 'screen' }} />
         )}
       </div>
     </div>
