@@ -88,6 +88,63 @@ function getCaptureTimelineState(t: number) {
   };
 }
 
+function CaptureCornerBrackets({ compact = false }: { compact?: boolean }) {
+  const size = compact ? "w-2 h-2" : "w-3 h-3";
+  const cornerClass = `absolute ${size} text-[#2affef] opacity-35`;
+
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      <svg className={`${cornerClass} top-0 left-0`} viewBox="0 0 12 12">
+        <path d="M0 12 V0 H12" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} top-0 right-0`} viewBox="0 0 12 12">
+        <path d="M12 12 V0 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} bottom-0 left-0`} viewBox="0 0 12 12">
+        <path d="M0 0 V12 H12" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+      <svg className={`${cornerClass} bottom-0 right-0`} viewBox="0 0 12 12">
+        <path d="M12 0 V12 H0" fill="none" stroke="currentColor" strokeWidth="1" />
+      </svg>
+    </div>
+  );
+}
+
+function CaptureFrameLines() {
+  return (
+    <div className="pointer-events-none absolute inset-3 border border-[#2affef]/12" aria-hidden="true">
+      <CaptureCornerBrackets />
+      <div className="absolute left-1/2 top-0 h-5 w-px -translate-x-1/2 bg-[#2affef]/15" />
+      <div className="absolute bottom-0 left-1/2 h-5 w-px -translate-x-1/2 bg-[#2affef]/15" />
+      <div className="absolute left-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#2affef]/15" />
+      <div className="absolute right-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#2affef]/15" />
+    </div>
+  );
+}
+
+function CaptureHudPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`relative border border-[#2affef]/15 bg-[#040b0a]/35 px-4 py-3 backdrop-blur-[1px] ${className}`}>
+      <CaptureCornerBrackets compact />
+      {children}
+    </div>
+  );
+}
+
+function CaptureMeter({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="w-28 space-y-1.5">
+      <div className="flex items-center justify-between gap-3 font-mono text-[7px] tracking-[0.18em] text-[#2affef] uppercase">
+        <span className="opacity-55">{label}</span>
+        <span className="tabular-nums opacity-85">{value}</span>
+      </div>
+      <div className="relative h-px w-full overflow-hidden bg-[#2affef]/15">
+        <div className="absolute inset-y-0 left-0 bg-[#2affef]/60" style={{ width: value }} />
+      </div>
+    </div>
+  );
+}
+
 
 export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
@@ -152,35 +209,37 @@ export default function ReconCaptureStage() {
         <div className="pointer-events-none absolute inset-0 z-20" style={{backdropFilter:'blur(2.5px)',WebkitBackdropFilter:'blur(2.5px)',opacity:0.18}} />
 
         {/* Capture-only HUD overlay (z-30) */}
-        <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between">
-          {/* Top strip */}
-          <div className="w-full flex flex-col items-center pt-3 select-none">
-            <div className="font-mono text-[10px] tracking-[0.22em] text-[#2affef] opacity-80 uppercase" style={{letterSpacing:'0.18em'}}>
-              DEEP_SPACE_RECON
-            </div>
-            <div className="flex gap-4 mt-1">
-              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-60 uppercase">MODE: CAPTURE</span>
-              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-60 uppercase">SIGNAL: PARTIAL</span>
-            </div>
+        <div className="pointer-events-none absolute inset-0 z-30 select-none">
+          <CaptureFrameLines />
+
+          <div className="absolute inset-x-4 top-4 flex flex-col items-center gap-2">
+            <CaptureHudPanel className="w-full max-w-[22rem]">
+              <div className="text-center font-mono uppercase text-[#2affef]">
+                <div className="text-[11px] tracking-[0.24em] opacity-90">DEEP_SPACE_RECON</div>
+                <div className="mt-2 flex items-center justify-center gap-4 text-[8px] tracking-[0.18em] opacity-65">
+                  <span>MODE: CAPTURE</span>
+                  <span className="h-3 w-px bg-[#2affef]/20" aria-hidden="true" />
+                  <span>SIGNAL: PARTIAL</span>
+                </div>
+              </div>
+            </CaptureHudPanel>
+
+            <CaptureHudPanel className="w-full max-w-[18rem]">
+              <div className="flex items-center justify-center gap-5">
+                <CaptureMeter label="GRAVIMETRIC" value={gravimetric} />
+                <CaptureMeter label="FIELD RES." value={fieldRes} />
+              </div>
+            </CaptureHudPanel>
           </div>
-          {/* Compact meters */}
-          <div className="flex flex-row justify-center gap-6 mt-2">
-            <div className="flex flex-col items-center">
-              <span className="font-mono text-[7px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">GRAVIMETRIC</span>
-              <span className="font-mono text-[10px] tracking-[0.18em] text-[#2affef] opacity-80 tabular-nums">{gravimetric}</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-mono text-[7px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">FIELD RES.</span>
-              <span className="font-mono text-[10px] tracking-[0.18em] text-[#2affef] opacity-80 tabular-nums">{fieldRes}</span>
-            </div>
-          </div>
-          {/* Bottom strip */}
-          <div className="w-full flex flex-col items-center pb-3 select-none">
-            <div className="flex flex-col gap-0.5 items-center">
-              <span className="font-mono text-[9px] tracking-[0.18em] text-[#2affef] opacity-70 uppercase">LOG_000 // DORMANT</span>
-              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">ORIGIN VECTOR: TOKEN-LOCKED</span>
-              <span className="font-mono text-[8px] tracking-[0.18em] text-[#2affef] opacity-50 uppercase">SIGNAL TRACE: PARTIAL</span>
-            </div>
+
+          <div className="absolute inset-x-4 bottom-4 flex justify-center">
+            <CaptureHudPanel className="w-full max-w-[22rem]">
+              <div className="flex flex-col items-center gap-1 font-mono text-[#2affef] uppercase">
+                <span className="text-[10px] tracking-[0.2em] opacity-85">LOG_000 // DORMANT</span>
+                <span className="text-[8px] tracking-[0.18em] opacity-65">ORIGIN VECTOR: TOKEN-LOCKED</span>
+                <span className="text-[8px] tracking-[0.18em] opacity-65">SIGNAL TRACE: PARTIAL</span>
+              </div>
+            </CaptureHudPanel>
           </div>
         </div>
 
