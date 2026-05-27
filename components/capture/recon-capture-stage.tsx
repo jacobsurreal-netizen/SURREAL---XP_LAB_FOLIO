@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { ReconShell } from "../recon/recon-shell";
 
 
-// Deterministic 9s timeline driver
+const CAPTURE_SCAN_SECONDS = 9;
+const CAPTURE_TOTAL_SECONDS = 13;
+
+// Deterministic 13s timeline driver
 const CAPTURE_TIMELINE = [
   {
     phase: "boot",
@@ -59,6 +62,42 @@ const CAPTURE_TIMELINE = [
     glitch: false,
     blackout: true,
   },
+  {
+    phase: "diagnosis_pause",
+    start: 9.0,
+    end: 10.0,
+    label: "",
+    subline: "",
+    glitch: false,
+    blackout: true,
+  },
+  {
+    phase: "machine_insufficient",
+    start: 10.0,
+    end: 11.2,
+    label: "MACHINE ANALYSIS INSUFFICIENT",
+    subline: "",
+    glitch: false,
+    blackout: true,
+  },
+  {
+    phase: "human_required",
+    start: 11.2,
+    end: 12.6,
+    label: "HUMAN CORRELATION REQUIRED",
+    subline: "",
+    glitch: false,
+    blackout: true,
+  },
+  {
+    phase: "final_black",
+    start: 12.6,
+    end: 13.0,
+    label: "",
+    subline: "",
+    glitch: false,
+    blackout: true,
+  },
 ];
 
 function getCaptureTimelineState(t: number) {
@@ -68,7 +107,7 @@ function getCaptureTimelineState(t: number) {
       return {
         elapsedSeconds: t,
         capturePhase: entry.phase,
-        captureProgress: Math.min(t / 9, 1),
+        captureProgress: Math.min(t / CAPTURE_SCAN_SECONDS, 1),
         captureLabel: entry.label,
         captureSubline: entry.subline,
         glitchActive: entry.glitch,
@@ -81,11 +120,22 @@ function getCaptureTimelineState(t: number) {
     elapsedSeconds: t,
     capturePhase: "done",
     captureProgress: 1,
-    captureLabel: "SIGNAL LOST",
+    captureLabel: "",
     captureSubline: "",
     glitchActive: false,
     blackoutActive: true,
   };
+}
+
+function isFinalDiagnosisPhase(phase: string) {
+  return (
+    phase === "signal_loss" ||
+    phase === "diagnosis_pause" ||
+    phase === "machine_insufficient" ||
+    phase === "human_required" ||
+    phase === "final_black" ||
+    phase === "done"
+  );
 }
 
 function CaptureCornerBrackets({ compact = false }: { compact?: boolean }) {
@@ -150,13 +200,13 @@ export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
 
-  // Timeline driver: 0–9s, deterministic, no random
+  // Timeline driver: 0–13s, deterministic, no random
   useEffect(() => {
     let start = performance.now();
     function step(now: number) {
-      const t = Math.min((now - start) / 1000, 9);
+      const t = Math.min((now - start) / 1000, CAPTURE_TOTAL_SECONDS);
       setElapsed(t);
-      if (t < 9) rafRef.current = requestAnimationFrame(step);
+      if (t < CAPTURE_TOTAL_SECONDS) rafRef.current = requestAnimationFrame(step);
     }
     rafRef.current = requestAnimationFrame(step);
     return () => {
@@ -167,9 +217,17 @@ export default function ReconCaptureStage() {
   // Timeline state for overlays
   const timeline = getCaptureTimelineState(elapsed);
 
-  // Blackout at end
-  if (timeline.blackoutActive && timeline.capturePhase === "signal_loss") {
-    return <div className="fixed inset-0 bg-[#040b0a]" />;
+  // Final diagnosis: clean black screen, no scene/HUD/timeline competition.
+  if (timeline.blackoutActive && isFinalDiagnosisPhase(timeline.capturePhase)) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#040b0a] select-none">
+        {timeline.captureLabel && (
+          <div className="px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]">
+            {timeline.captureLabel}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // Synthetic meter values (timeline-driven, simple animation)
