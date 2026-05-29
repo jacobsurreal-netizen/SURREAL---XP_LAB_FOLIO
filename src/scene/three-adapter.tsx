@@ -16,6 +16,15 @@ import { createPointerTracker } from './input/pointer-tracker';
 interface ThreeRuntimeAdapterProps {
   progress?: number
   snapshot?: ThreeRuntimeSnapshot
+  captureInstability?: CaptureInstabilityState
+}
+
+type CaptureInstabilityState = {
+  enabled: boolean
+  elapsedSeconds: number
+  phase: string
+  progress: number
+  pressure: number
 }
 
 type ThreeRuntimeSnapshot = {
@@ -32,6 +41,7 @@ type HeroSpectrumMode = 'COLOR' | 'IR' | 'SCAN'
 export function ThreeRuntimeAdapter({
   progress = 0,
   snapshot,
+  captureInstability,
 }: ThreeRuntimeAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationId = useRef<number | null>(null);
@@ -39,6 +49,7 @@ export function ThreeRuntimeAdapter({
   const composerRef = useRef<EffectComposer | null>(null);
   const progressRef = useRef(progress);
   const snapshotRef = useRef<ThreeRuntimeSnapshot | undefined>(snapshot);
+  const captureInstabilityRef = useRef<CaptureInstabilityState | undefined>(captureInstability);
   const heroAssetRef = useRef<THREE.Object3D | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
   const directionalLightRef = useRef<THREE.DirectionalLight | null>(null);
@@ -57,6 +68,10 @@ export function ThreeRuntimeAdapter({
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+
+  useEffect(() => {
+    captureInstabilityRef.current = captureInstability;
+  }, [captureInstability]);
 
   // Sync spectrum state to ref for non-reactive scene lifecycle
   useEffect(() => {
@@ -196,6 +211,7 @@ pointerTracker.attach();
       scale: 1.5,
       enableIdleRotation: true,
       camera,
+      getCaptureInstability: () => captureInstabilityRef.current,
     })
       .then((asset) => {
         scene.add(asset);

@@ -14,9 +14,18 @@ import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
 interface ReconShellProps {
   children: React.ReactNode;
   bypassInit?: boolean;
+  captureInstability?: CaptureInstabilityState;
 }
 
-export function ReconShell({ children, bypassInit = false }: ReconShellProps) {
+type CaptureInstabilityState = {
+  enabled: boolean;
+  elapsedSeconds: number;
+  phase: string;
+  progress: number;
+  pressure: number;
+};
+
+export function ReconShell({ children, bypassInit = false, captureInstability }: ReconShellProps) {
   const { initPhase, bootStep, startBoot } = useReconInitSequence();
   const initPhaseRef = useRef(initPhase);
   initPhaseRef.current = initPhase;
@@ -88,6 +97,7 @@ export function ReconShell({ children, bypassInit = false }: ReconShellProps) {
         <div className="absolute inset-0 z-10 pointer-events-none">
           <ThreeRuntimeAdapter
             progress={smoothedProgress}
+            captureInstability={captureInstability}
             snapshot={{
               scrollProgress: smoothedProgress,
               sectorIndex,
