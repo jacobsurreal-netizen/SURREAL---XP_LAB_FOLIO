@@ -233,6 +233,42 @@ export default function ReconCaptureStage() {
   // Synthetic meter values (timeline-driven, simple animation)
   const gravimetric = `${Math.round(80 + 8 * timeline.captureProgress)}%`;
   const fieldRes = `${Math.round(70 + 10 * timeline.captureProgress)}%`;
+  const phase = timeline.capturePhase;
+  const focusHunt = phase === "aligning" ? (Math.sin(elapsed * 7) + 1) / 2 : 0;
+  const resonancePressure =
+    phase === "unstable" ? Math.max(0, Math.min(1, (elapsed - 3.5) / 2.3)) : 0;
+  const failurePressure = phase === "fail" ? 1 : 0;
+  const opticalHazeOpacity =
+    phase === "boot"
+      ? 0.08
+      : phase === "aligning"
+        ? 0.10 + focusHunt * 0.08
+        : phase === "unstable"
+          ? 0.18 + resonancePressure * 0.10
+          : phase === "fail"
+            ? 0.42
+            : 0.06;
+  const opticalBlur =
+    phase === "aligning"
+      ? 0.6 + focusHunt * 1.3
+      : phase === "unstable"
+        ? 1.2 + resonancePressure * 0.8
+        : phase === "fail"
+          ? 2.5
+          : 0.4;
+  const washOpacity =
+    phase === "unstable"
+      ? 0.20 + resonancePressure * 0.18
+      : phase === "fail"
+        ? 0.72
+        : phase === "aligning"
+          ? 0.08 + focusHunt * 0.08
+          : phase === "boot"
+            ? 0.05
+            : 0.04;
+  const driftOpacity =
+    phase === "unstable" ? 0.16 + resonancePressure * 0.12 : phase === "aligning" ? 0.08 : 0;
+  const scanTearOpacity = phase === "fail" ? 0.72 : phase === "unstable" ? 0.10 : 0;
 
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
@@ -265,6 +301,62 @@ export default function ReconCaptureStage() {
         </div>
         <div className="pointer-events-none absolute inset-0 z-20" style={{background:'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 60%, #040b0a 100%)',opacity:0.38}} />
         <div className="pointer-events-none absolute inset-0 z-20" style={{backdropFilter:'blur(2.5px)',WebkitBackdropFilter:'blur(2.5px)',opacity:0.18}} />
+
+        {/* Capture-only optical instability: sensor interpretation layers, not scene/model changes. */}
+        <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(42,255,239,0.18), rgba(0,172,108,0.06) 38%, transparent 68%)",
+              opacity: washOpacity,
+              mixBlendMode: phase === "fail" ? "screen" : "soft-light",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: `blur(${opticalBlur}px) saturate(${1 + resonancePressure * 0.55 + failurePressure * 1.6}) contrast(${1 - resonancePressure * 0.14})`,
+              WebkitBackdropFilter: `blur(${opticalBlur}px) saturate(${1 + resonancePressure * 0.55 + failurePressure * 1.6}) contrast(${1 - resonancePressure * 0.14})`,
+              opacity: opticalHazeOpacity,
+            }}
+          />
+          <div
+            className="absolute -inset-x-8 top-1/2 h-24 -translate-y-1/2 rotate-[-2deg]"
+            style={{
+              background:
+                "linear-gradient(180deg, transparent, rgba(42,255,239,0.14), rgba(0,172,108,0.08), transparent)",
+              opacity: driftOpacity,
+              transform: `translate3d(${Math.sin(elapsed * 2.4) * 8}px, ${Math.sin(elapsed * 3.1) * 10}px, 0) rotate(-2deg)`,
+              mixBlendMode: "screen",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "repeating-linear-gradient(178deg, transparent 0 18px, rgba(42,255,239,0.10) 19px 20px, transparent 21px 42px)",
+              opacity: phase === "unstable" ? 0.16 : phase === "aligning" ? 0.08 : 0,
+              transform: `translateY(${Math.sin(elapsed * 8) * 3}px)`,
+            }}
+          />
+          <div
+            className="absolute left-0 right-0 h-[18vh]"
+            style={{
+              top: `${34 + Math.sin(elapsed * 18) * 12}%`,
+              background:
+                "linear-gradient(180deg, transparent, rgba(202,255,239,0.28), rgba(42,255,239,0.16), transparent)",
+              opacity: scanTearOpacity,
+              mixBlendMode: "screen",
+            }}
+          />
+        </div>
+
+        {(phase === "unstable" || phase === "fail") && (
+          <div className="pointer-events-none absolute left-1/2 top-[24%] z-30 -translate-x-1/2 font-mono text-[8px] tracking-[0.2em] text-[#2affef] opacity-45">
+            {phase === "fail" ? "SENSOR SATURATION: CRITICAL" : "Z-AXIS GEOMETRY: UNRESOLVED"}
+          </div>
+        )}
 
         {/* Capture-only HUD overlay (z-30) */}
         <div className="pointer-events-none absolute inset-0 z-30 select-none">
