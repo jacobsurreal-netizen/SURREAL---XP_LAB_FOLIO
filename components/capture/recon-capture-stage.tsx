@@ -4,9 +4,9 @@ import { ReconShell } from "../recon/recon-shell";
 
 
 const CAPTURE_SCAN_SECONDS = 9;
-const CAPTURE_TOTAL_SECONDS = 13;
+const CAPTURE_TOTAL_SECONDS = 15;
 
-// Deterministic 13s timeline driver
+// Deterministic 15s timeline driver
 const CAPTURE_TIMELINE = [
   {
     phase: "boot",
@@ -30,7 +30,7 @@ const CAPTURE_TIMELINE = [
     phase: "unstable",
     start: 3.5,
     end: 5.8,
-    label: "FREQ: 369.9 Hz [UNSTABLE]",
+    label: "FREQ: [UNSTABLE]",
     subline: "RESONANCE DRIFT DETECTED",
     glitch: false,
     blackout: false,
@@ -39,7 +39,7 @@ const CAPTURE_TIMELINE = [
     phase: "fail",
     start: 5.8,
     end: 6.5,
-    label: "OPTICAL ALIGNMENT: FAILED",
+    label: "OPTICAL ALIGNMENT:\nFAILED",
     subline: "",
     glitch: true,
     blackout: true,
@@ -48,8 +48,8 @@ const CAPTURE_TIMELINE = [
     phase: "insufficient",
     start: 6.5,
     end: 8.5,
-    label: "SINGLE VIEWPOINT INSUFFICIENT.",
-    subline: "ORIGIN VECTOR: TOKEN-LOCKED",
+    label: "SINGLE VIEWPOINT\nINSUFFICIENT.",
+    subline: "PARTIAL ACQUISITION",
     glitch: false,
     blackout: false,
   },
@@ -57,7 +57,7 @@ const CAPTURE_TIMELINE = [
     phase: "signal_loss",
     start: 8.5,
     end: 9.0,
-    label: "SIGNAL LOSS",
+    label: "SIGNAL LOST",
     subline: "",
     glitch: false,
     blackout: true,
@@ -74,7 +74,7 @@ const CAPTURE_TIMELINE = [
   {
     phase: "machine_insufficient",
     start: 10.0,
-    end: 11.2,
+    end: 12.5,
     label: "MACHINE ANALYSIS INSUFFICIENT",
     subline: "",
     glitch: false,
@@ -82,8 +82,8 @@ const CAPTURE_TIMELINE = [
   },
   {
     phase: "human_required",
-    start: 11.2,
-    end: 12.6,
+    start: 12.6,
+    end: 14.2,
     label: "HUMAN CORRELATION REQUIRED",
     subline: "",
     glitch: false,
@@ -91,8 +91,8 @@ const CAPTURE_TIMELINE = [
   },
   {
     phase: "final_black",
-    start: 12.6,
-    end: 13.0,
+    start: 14.2,
+    end: 15.0,
     label: "",
     subline: "",
     glitch: false,
@@ -167,6 +167,34 @@ function isFinalDiagnosisPhase(phase: string) {
   );
 }
 
+const DIAGNOSIS_GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\[]{}<>#_";
+
+function getResolvedDiagnosisText(
+  text: string,
+  progress: number,
+  elapsedSeconds: number,
+  seed: number,
+  settleAt: number
+) {
+  const chars = Array.from(text);
+  const revealProgress = Math.min(1, progress / settleAt);
+  const tick = Math.floor(elapsedSeconds * 18);
+
+  return chars
+    .map((char, index) => {
+      if (char === " ") return " ";
+      if (progress > 0.92) return char;
+
+      const revealPoint = ((index + 1) / chars.length) * 0.86;
+      if (revealProgress >= revealPoint) return char;
+
+      const glyphIndex =
+        (seed * 31 + index * 17 + tick * ((index % 5) + 1)) % DIAGNOSIS_GLYPHS.length;
+      return DIAGNOSIS_GLYPHS[glyphIndex];
+    })
+    .join("");
+}
+
 function CaptureCornerBrackets({ compact = false }: { compact?: boolean }) {
   const size = compact ? "w-2 h-2" : "w-3 h-3";
   const cornerClass = `absolute ${size} text-[#2affef] opacity-35`;
@@ -229,7 +257,7 @@ export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
 
-  // Timeline driver: 0–13s, deterministic, no random
+  // Timeline driver: 0–15s, deterministic, no random
   useEffect(() => {
     let start = performance.now();
     function step(now: number) {
@@ -255,11 +283,45 @@ export default function ReconCaptureStage() {
 
   // Final diagnosis: clean black screen, no scene/HUD/timeline competition.
   if (timeline.blackoutActive && isFinalDiagnosisPhase(timeline.capturePhase)) {
+    const diagnosisProgress = getPhaseProgress(timeline.capturePhase, timeline.elapsedSeconds);
+    const isMachineDiagnosis = timeline.capturePhase === "machine_insufficient";
+    const isHumanDiagnosis = timeline.capturePhase === "human_required";
+    const diagnosisText =
+      isMachineDiagnosis || isHumanDiagnosis
+        ? getResolvedDiagnosisText(
+            timeline.captureLabel,
+            diagnosisProgress,
+            timeline.elapsedSeconds,
+            isMachineDiagnosis ? 11 : 23,
+            isMachineDiagnosis ? 0.78 : 0.62
+          )
+        : timeline.captureLabel;
+    const resolvingDiagnosis = isMachineDiagnosis || isHumanDiagnosis;
+    const diagnosisSettled = diagnosisProgress > (isMachineDiagnosis ? 0.82 : 0.68);
+
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#040b0a] select-none">
-        {timeline.captureLabel && (
-          <div className="px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]">
-            {timeline.captureLabel}
+        {diagnosisText && (
+          <div className="relative px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]">
+            {resolvingDiagnosis && !diagnosisSettled && (
+              <>
+                <span
+                  className="absolute inset-0 text-[#a879ff]/25"
+                  style={{ transform: `translateX(${Math.sin(elapsed * 12) * 2}px)` }}
+                  aria-hidden="true"
+                >
+                  {diagnosisText}
+                </span>
+                <span
+                  className="absolute inset-0 text-[#7dff9b]/15"
+                  style={{ transform: `translateX(${Math.cos(elapsed * 15) * -1.5}px)` }}
+                  aria-hidden="true"
+                >
+                  {diagnosisText}
+                </span>
+              </>
+            )}
+            <span>{diagnosisText}</span>
           </div>
         )}
       </div>
@@ -517,6 +579,20 @@ export default function ReconCaptureStage() {
           </div>
         )}
 
+        {phase === "insufficient" && (
+          <div className="pointer-events-none absolute left-1/2 top-[30%] z-[35] w-[78%] max-w-[20rem] -translate-x-1/2 border border-[#a879ff]/30 bg-[#090812]/55 px-4 py-3 font-mono uppercase shadow-[0_0_28px_rgba(168,121,255,0.10)] backdrop-blur-[2px]">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#a879ff]/60 to-transparent" />
+            <div className="flex items-center justify-between gap-3 text-[7px] tracking-[0.22em] text-[#a879ff]/80">
+              <span>OBSERVATION ERROR</span>
+              <span className="tabular-nums text-[#2affef]/55">LOG_006</span>
+            </div>
+            <div className="mt-3 space-y-1.5 text-[9px] tracking-[0.2em] text-[#d9d0ff]/80">
+              <div>VIEWPOINT COUNT: INSUFFICIENT</div>
+              <div className="text-[#2affef]/55">PARTIAL ACQUISITION</div>
+            </div>
+          </div>
+        )}
+
         {/* Capture-only HUD overlay (z-30) */}
         <div className="pointer-events-none absolute inset-0 z-30 select-none">
           <CaptureFrameLines />
@@ -556,12 +632,22 @@ export default function ReconCaptureStage() {
         {(timeline.captureLabel || timeline.captureSubline) && (
           <div className="absolute left-1/2 top-[68%] z-30 w-full flex flex-col items-center pointer-events-none" style={{ transform: 'translateX(-50%)' }}>
             {timeline.captureLabel && (
-              <div className="font-mono text-[18px] md:text-[22px] tracking-[0.22em] text-[#2aff84] drop-shadow-[0_0_8px_#00ac6c88] text-center uppercase" style={{ letterSpacing: '0.18em' }}>
-                {timeline.captureLabel}
+              <div className="relative whitespace-pre-line text-center font-mono text-[17px] tracking-[0.22em] text-[#2affef]/90 uppercase drop-shadow-[0_0_10px_rgba(42,255,239,0.34)] md:text-[20px]" style={{ letterSpacing: '0.18em' }}>
+                {(phase === "unstable" || phase === "fail") && (
+                  <>
+                    <span className="absolute inset-0 translate-x-[1px] text-[#a879ff]/25" aria-hidden="true">
+                      {timeline.captureLabel}
+                    </span>
+                    <span className="absolute inset-0 -translate-x-[1px] text-[#7dff9b]/15" aria-hidden="true">
+                      {timeline.captureLabel}
+                    </span>
+                  </>
+                )}
+                <span>{timeline.captureLabel}</span>
               </div>
             )}
             {timeline.captureSubline && (
-              <div className="font-mono text-[12px] md:text-[14px] tracking-[0.18em] text-[#00ac6c] opacity-80 text-center mt-1 uppercase" style={{ letterSpacing: '0.13em' }}>
+              <div className="mt-1 text-center font-mono text-[11px] tracking-[0.18em] text-[#2affef]/58 uppercase md:text-[13px]" style={{ letterSpacing: '0.13em' }}>
                 {timeline.captureSubline}
               </div>
             )}
