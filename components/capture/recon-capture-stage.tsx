@@ -147,11 +147,11 @@ function getPhaseProgress(phase: string, elapsedSeconds: number) {
 function getCapturePressure(phase: string, elapsedSeconds: number) {
   const phaseProgress = getPhaseProgress(phase, elapsedSeconds);
 
-  if (phase === "boot") return 0.12 + phaseProgress * 0.08;
-  if (phase === "aligning") return 0.32 + phaseProgress * 0.28;
-  if (phase === "unstable") return 0.72 + phaseProgress * 0.48;
-  if (phase === "fail") return 1.35;
-  if (phase === "insufficient") return 0.58 - phaseProgress * 0.2;
+  if (phase === "boot") return 0.08 + phaseProgress * 0.04;
+  if (phase === "aligning") return 0.2 + phaseProgress * 0.22;
+  if (phase === "unstable") return 0.62 + phaseProgress * 0.33;
+  if (phase === "fail") return 1.2;
+  if (phase === "insufficient") return 0.42 - phaseProgress * 0.16;
 
   return 0;
 }
@@ -276,85 +276,106 @@ export default function ReconCaptureStage() {
   const resonancePressure =
     phase === "unstable" ? Math.max(0, Math.min(1, (elapsed - 3.5) / 2.3)) : 0;
   const failurePressure = phase === "fail" ? 1 : 0;
-  const unresolvedPressure = phase === "insufficient" ? 0.45 - phaseProgress * 0.2 : 0;
-  const visualPressure = Math.max(0, pressure + failurePressure * 0.25 + unresolvedPressure);
+  const unresolvedPressure = phase === "insufficient" ? 0.12 - phaseProgress * 0.04 : 0;
+  const visualPressure = Math.max(
+    0,
+    Math.min(phase === "fail" ? 1.28 : 1, pressure + failurePressure * 0.18 + unresolvedPressure)
+  );
   const lockSlip = Math.sin(elapsed * 10.7) * visualPressure + Math.sin(elapsed * 17.3) * visualPressure * 0.35;
-  const sceneShiftX = lockSlip * (phase === "fail" ? 14 : phase === "unstable" ? 8 : 3);
-  const sceneShiftY = Math.cos(elapsed * 8.9) * visualPressure * (phase === "fail" ? 9 : 4);
+  const sceneShiftX = lockSlip * (phase === "fail" ? 13 : phase === "unstable" ? 7 : phase === "aligning" ? 2.5 : 1.25);
+  const sceneShiftY = Math.cos(elapsed * 8.9) * visualPressure * (phase === "fail" ? 8 : phase === "unstable" ? 3.5 : 1.4);
   const sceneRotate = Math.sin(elapsed * 5.1) * visualPressure * (phase === "fail" ? 1.8 : 0.65);
   const sceneScaleX = 1 + visualPressure * 0.012 + Math.sin(elapsed * 6.4) * visualPressure * 0.006;
   const sceneScaleY = 1 - visualPressure * 0.008 + Math.cos(elapsed * 7.2) * visualPressure * 0.005;
-  const sceneBlur = 0.35 + visualPressure * 2.15 + failurePressure * 2.4;
-  const sceneSaturation = Math.max(0.32, 0.86 - visualPressure * 0.32 - failurePressure * 0.12);
+  const sceneBlur =
+    phase === "fail"
+      ? 4.6
+      : phase === "unstable"
+        ? 0.85 + resonancePressure * 1.7
+        : phase === "aligning"
+          ? 0.25 + focusHunt * 0.85 + visualPressure * 0.45
+          : phase === "insufficient"
+            ? 1.25
+            : 0.12 + visualPressure * 0.55;
+  const sceneSaturation = Math.max(0.38, 0.9 - visualPressure * 0.24 - failurePressure * 0.12);
   const sceneContrast = 1.05 + visualPressure * 0.22 + failurePressure * 0.28;
-  const sceneBrightness = 0.92 - visualPressure * 0.08 + failurePressure * 0.04;
+  const sceneBrightness =
+    phase === "boot"
+      ? 0.98
+      : phase === "aligning"
+        ? 0.96
+        : 0.94 - visualPressure * 0.06 + failurePressure * 0.04;
   const ghostOpacity =
     phase === "boot"
-      ? 0.08
+      ? 0.035
       : phase === "aligning"
-        ? 0.16 + focusHunt * 0.1
+        ? 0.08 + focusHunt * 0.08
         : phase === "unstable"
-          ? 0.34 + resonancePressure * 0.25
+          ? 0.28 + resonancePressure * 0.24
           : phase === "fail"
             ? 0.78
             : phase === "insufficient"
-              ? 0.28
+              ? 0.18
               : 0;
   const acquisitionMaskOpacity =
     phase === "unstable"
-      ? 0.38 + resonancePressure * 0.24
+      ? 0.32 + resonancePressure * 0.22
       : phase === "fail"
         ? 0.9
         : phase === "aligning"
-          ? 0.2 + focusHunt * 0.14
+          ? 0.12 + focusHunt * 0.08
           : phase === "insufficient"
-            ? 0.22
-            : 0.1;
+            ? 0.16
+            : 0.045;
   const opticalHazeOpacity =
     phase === "boot"
-      ? 0.14
+      ? 0.08
       : phase === "aligning"
-        ? 0.18 + focusHunt * 0.16
+        ? 0.12 + focusHunt * 0.1
         : phase === "unstable"
-          ? 0.34 + resonancePressure * 0.32
+          ? 0.28 + resonancePressure * 0.28
           : phase === "fail"
             ? 0.76
             : phase === "insufficient"
-              ? 0.24
-              : 0.08;
+              ? 0.18
+              : 0.06;
   const opticalBlur =
     phase === "aligning"
-      ? 1.1 + focusHunt * 2.4
+      ? 0.55 + focusHunt * 1.45
       : phase === "unstable"
-        ? 2.2 + resonancePressure * 3.2
+        ? 1.35 + resonancePressure * 2.35
         : phase === "fail"
-          ? 7.2
+          ? 5.8
           : phase === "insufficient"
-            ? 2.6
-            : 0.7;
+            ? 1.55
+            : 0.28;
   const washOpacity =
     phase === "unstable"
-      ? 0.34 + resonancePressure * 0.36
+      ? 0.28 + resonancePressure * 0.3
       : phase === "fail"
         ? 0.92
         : phase === "aligning"
-          ? 0.16 + focusHunt * 0.16
+          ? 0.08 + focusHunt * 0.1
           : phase === "boot"
-            ? 0.08
+            ? 0.04
             : phase === "insufficient"
-              ? 0.22
-              : 0.05;
+              ? 0.16
+              : 0.04;
   const driftOpacity =
     phase === "unstable"
-      ? 0.34 + resonancePressure * 0.3
+      ? 0.3 + resonancePressure * 0.28
       : phase === "aligning"
-        ? 0.16
+        ? 0.1
         : phase === "fail"
           ? 0.7
           : phase === "insufficient"
-            ? 0.18
+            ? 0.13
             : 0;
-  const scanTearOpacity = phase === "fail" ? 0.92 : phase === "unstable" ? 0.36 + resonancePressure * 0.2 : phase === "insufficient" ? 0.14 : 0;
+  const scanTearOpacity = phase === "fail" ? 0.92 : phase === "unstable" ? 0.3 + resonancePressure * 0.18 : phase === "insufficient" ? 0.1 : 0;
+  const acquisitionBlur =
+    phase === "unstable" ? 2.6 + resonancePressure * 2.1 : phase === "fail" ? 6.6 : 0.7 + visualPressure * 1.8;
+  const ghostBandBlur =
+    phase === "unstable" ? 1.1 + resonancePressure * 1.8 : phase === "fail" ? 5.4 : 0.55 + visualPressure * 1.7;
 
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
@@ -392,8 +413,8 @@ export default function ReconCaptureStage() {
         <div className="pointer-events-none absolute inset-0 z-20" style={{opacity:0.10}}>
           <div className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(0,172,108,0.09)_0_2px,transparent_2px_8px)]" />
         </div>
-        <div className="pointer-events-none absolute inset-0 z-20" style={{background:'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 60%, #040b0a 100%)',opacity:0.38}} />
-        <div className="pointer-events-none absolute inset-0 z-20" style={{backdropFilter:'blur(2.5px)',WebkitBackdropFilter:'blur(2.5px)',opacity:0.18}} />
+        <div className="pointer-events-none absolute inset-0 z-20" style={{background:'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 60%, #040b0a 100%)',opacity:0.32}} />
+        <div className="pointer-events-none absolute inset-0 z-20" style={{backdropFilter:'blur(1.6px)',WebkitBackdropFilter:'blur(1.6px)',opacity:0.12}} />
 
         {/* Capture-only optical instability: sensor interpretation layers, not scene/model changes. */}
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
@@ -402,31 +423,31 @@ export default function ReconCaptureStage() {
             style={{
               background:
                 "radial-gradient(ellipse 38% 34% at 50% 48%, transparent 0 34%, rgba(2,188,126,0.24) 42%, rgba(42,255,239,0.08) 52%, transparent 68%)",
-              filter: `blur(${1.5 + visualPressure * 5}px)`,
+              filter: `blur(${acquisitionBlur}px)`,
               opacity: acquisitionMaskOpacity,
-              transform: `translate3d(${Math.sin(elapsed * 4.8) * visualPressure * 10}px, ${Math.cos(elapsed * 3.7) * visualPressure * 7}px, 0) scale(${1 + visualPressure * 0.08})`,
+              transform: `translate3d(${Math.sin(elapsed * 4.8) * visualPressure * 7}px, ${Math.cos(elapsed * 3.7) * visualPressure * 5}px, 0) scale(${1 + visualPressure * 0.055})`,
               mixBlendMode: phase === "fail" ? "screen" : "plus-lighter",
             }}
           />
           <div
             className="absolute inset-0"
             style={{
-              backdropFilter: `blur(${1.5 + visualPressure * 4.5}px) contrast(${1 + visualPressure * 0.45}) saturate(${0.6 + failurePressure * 0.9})`,
-              WebkitBackdropFilter: `blur(${1.5 + visualPressure * 4.5}px) contrast(${1 + visualPressure * 0.45}) saturate(${0.6 + failurePressure * 0.9})`,
+              backdropFilter: `blur(${ghostBandBlur}px) contrast(${1 + visualPressure * 0.35}) saturate(${0.75 + failurePressure * 0.75})`,
+              WebkitBackdropFilter: `blur(${ghostBandBlur}px) contrast(${1 + visualPressure * 0.35}) saturate(${0.75 + failurePressure * 0.75})`,
               clipPath: `polygon(0 ${20 + Math.sin(elapsed * 5.5) * 8}%, 100% ${17 + Math.sin(elapsed * 5.5) * 8}%, 100% ${37 + Math.cos(elapsed * 4.1) * 7}%, 0 ${42 + Math.cos(elapsed * 4.1) * 7}%)`,
               opacity: ghostOpacity,
-              transform: `translate3d(${Math.sin(elapsed * 11.4) * visualPressure * 18}px, ${Math.cos(elapsed * 8.8) * visualPressure * 12}px, 0)`,
+              transform: `translate3d(${Math.sin(elapsed * 11.4) * visualPressure * 14}px, ${Math.cos(elapsed * 8.8) * visualPressure * 8}px, 0)`,
               mixBlendMode: "screen",
             }}
           />
           <div
             className="absolute inset-0"
             style={{
-              backdropFilter: `blur(${0.8 + visualPressure * 3.5}px) invert(${failurePressure * 0.08}) hue-rotate(${Math.sin(elapsed * 8) * visualPressure * 18}deg)`,
-              WebkitBackdropFilter: `blur(${0.8 + visualPressure * 3.5}px) invert(${failurePressure * 0.08}) hue-rotate(${Math.sin(elapsed * 8) * visualPressure * 18}deg)`,
+              backdropFilter: `blur(${Math.max(0.45, ghostBandBlur * 0.82)}px) invert(${failurePressure * 0.08}) hue-rotate(${Math.sin(elapsed * 8) * visualPressure * 14}deg)`,
+              WebkitBackdropFilter: `blur(${Math.max(0.45, ghostBandBlur * 0.82)}px) invert(${failurePressure * 0.08}) hue-rotate(${Math.sin(elapsed * 8) * visualPressure * 14}deg)`,
               clipPath: `polygon(0 ${58 + Math.cos(elapsed * 6.3) * 9}%, 100% ${54 + Math.sin(elapsed * 7.1) * 7}%, 100% ${76 + Math.sin(elapsed * 5.7) * 5}%, 0 ${72 + Math.cos(elapsed * 4.9) * 6}%)`,
-              opacity: ghostOpacity * 0.72,
-              transform: `translate3d(${Math.cos(elapsed * 12.2) * visualPressure * -16}px, ${Math.sin(elapsed * 9.5) * visualPressure * 10}px, 0)`,
+              opacity: ghostOpacity * 0.58,
+              transform: `translate3d(${Math.cos(elapsed * 12.2) * visualPressure * -12}px, ${Math.sin(elapsed * 9.5) * visualPressure * 7}px, 0)`,
               mixBlendMode: phase === "fail" ? "difference" : "soft-light",
             }}
           />
@@ -453,7 +474,7 @@ export default function ReconCaptureStage() {
               background:
                 "linear-gradient(180deg, transparent, rgba(42,255,239,0.28), rgba(0,172,108,0.18), rgba(2,188,126,0.08), transparent)",
               opacity: driftOpacity,
-              transform: `translate3d(${Math.sin(elapsed * 2.4) * (14 + visualPressure * 22)}px, ${Math.sin(elapsed * 3.1) * (14 + visualPressure * 18)}px, 0) rotate(${-2 + Math.sin(elapsed * 4.7) * visualPressure * 5}deg) scaleY(${1 + visualPressure * 0.55})`,
+              transform: `translate3d(${Math.sin(elapsed * 2.4) * (8 + visualPressure * 18)}px, ${Math.sin(elapsed * 3.1) * (8 + visualPressure * 14)}px, 0) rotate(${-2 + Math.sin(elapsed * 4.7) * visualPressure * 4}deg) scaleY(${1 + visualPressure * 0.45})`,
               mixBlendMode: "screen",
             }}
           />
@@ -462,8 +483,8 @@ export default function ReconCaptureStage() {
             style={{
               background:
                 "repeating-linear-gradient(178deg, transparent 0 14px, rgba(42,255,239,0.16) 15px 16px, rgba(255,255,255,0.06) 17px 18px, transparent 19px 34px)",
-              opacity: phase === "unstable" ? 0.34 : phase === "aligning" ? 0.16 : phase === "fail" ? 0.5 : phase === "insufficient" ? 0.18 : 0.08,
-              transform: `translateY(${Math.sin(elapsed * 8) * (4 + visualPressure * 10)}px) skewY(${Math.sin(elapsed * 6.1) * visualPressure * 1.4}deg)`,
+              opacity: phase === "unstable" ? 0.28 : phase === "aligning" ? 0.1 : phase === "fail" ? 0.5 : phase === "insufficient" ? 0.14 : 0.045,
+              transform: `translateY(${Math.sin(elapsed * 8) * (2 + visualPressure * 8)}px) skewY(${Math.sin(elapsed * 6.1) * visualPressure * 1.1}deg)`,
               mixBlendMode: "screen",
             }}
           />
@@ -482,9 +503,9 @@ export default function ReconCaptureStage() {
             style={{
               background:
                 "linear-gradient(90deg, transparent, rgba(42,255,239,0.08), transparent 18%, rgba(0,172,108,0.12) 24%, transparent 42%, rgba(202,255,239,0.1) 58%, transparent)",
-              opacity: phase === "fail" ? 0.8 : phase === "unstable" ? 0.32 + resonancePressure * 0.28 : phase === "aligning" ? 0.14 : 0.1,
-              transform: `translate3d(${Math.sin(elapsed * 15.2) * visualPressure * 34}px, ${Math.cos(elapsed * 7.4) * visualPressure * 12}px, 0) rotate(${Math.sin(elapsed * 3.9) * 3}deg)`,
-              filter: `blur(${1 + visualPressure * 4}px)`,
+              opacity: phase === "fail" ? 0.75 : phase === "unstable" ? 0.26 + resonancePressure * 0.24 : phase === "aligning" ? 0.08 : 0.06,
+              transform: `translate3d(${Math.sin(elapsed * 15.2) * visualPressure * 24}px, ${Math.cos(elapsed * 7.4) * visualPressure * 9}px, 0) rotate(${Math.sin(elapsed * 3.9) * 2.5}deg)`,
+              filter: `blur(${0.65 + visualPressure * 3}px)`,
               mixBlendMode: "plus-lighter",
             }}
           />
