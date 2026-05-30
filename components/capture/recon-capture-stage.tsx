@@ -307,10 +307,74 @@ function PurpleWarningOverlay({ elapsed }: { elapsed: number }) {
   );
 }
 
+function PhaseDiagnosticReadout({
+  phase,
+  label,
+  subline,
+}: {
+  phase: CaptureInstabilityPhase;
+  label: string;
+  subline: string;
+}) {
+  if (!label || phase === "insufficient" || phase === "done") return null;
+
+  const phaseIndex =
+    phase === "boot" ? "000" : phase === "aligning" ? "001" : phase === "unstable" ? "003" : "005";
+  const isFailure = phase === "fail";
+
+  if (isFailure) {
+    const [failureContext, failureState] = label.split("\n");
+
+    return (
+      <div className="pointer-events-none absolute left-6 right-6 top-[34%] z-[45] font-mono uppercase">
+        <div className="relative overflow-hidden border border-[#2affef]/35 bg-[#030908]/82 px-4 py-4 shadow-[0_0_30px_rgba(42,255,239,0.16)] backdrop-blur-[3px]">
+          <CaptureCornerBrackets compact />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2affef]/80 to-transparent" />
+          <div className="absolute inset-y-2 left-0 w-px bg-[#2affef]/60" />
+          <div className="absolute right-3 top-3 h-1.5 w-1.5 bg-[#7dff9b]/45 shadow-[0_0_9px_rgba(125,255,155,0.35)]" />
+          <div className="flex items-center justify-between gap-4 text-[7px] tracking-[0.18em] text-[#2affef]/58">
+            <span>ALIGNMENT INTERRUPT</span>
+            <span className="tabular-nums">{`ERR_${phaseIndex}`}</span>
+          </div>
+          <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-3">
+            <div className="text-[10px] leading-none tracking-[0.14em] text-[#2affef]/68">
+              {failureContext}
+            </div>
+            <div className="text-[19px] leading-none tracking-[0.13em] text-[#dffdfa] drop-shadow-[0_0_12px_rgba(42,255,239,0.36)]">
+              {failureState}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pointer-events-none absolute left-5 right-5 top-[56%] z-[32] font-mono uppercase">
+      <div className="relative max-w-[20rem] border-l border-[#2affef]/36 bg-[#03100f]/58 px-3.5 py-3 shadow-[0_0_24px_rgba(42,255,239,0.08)] backdrop-blur-[1.5px]">
+        <div className="absolute left-0 right-8 top-0 h-px bg-gradient-to-r from-[#2affef]/55 via-[#2affef]/18 to-transparent" />
+        <div className="absolute left-0 right-14 bottom-0 h-px bg-gradient-to-r from-[#2affef]/28 to-transparent" />
+        <div className="mb-2 flex items-center justify-between gap-3 text-[7px] tracking-[0.16em] text-[#2affef]/48">
+          <span>ACQ.STATUS</span>
+          <span className="tabular-nums">{`LOG_${phaseIndex}`}</span>
+        </div>
+        <div className="text-[13px] leading-[1.25] tracking-[0.12em] text-[#2affef]/86 drop-shadow-[0_0_10px_rgba(42,255,239,0.24)]">
+          {label}
+        </div>
+        {subline && (
+          <div className="mt-1.5 text-[8px] leading-[1.35] tracking-[0.14em] text-[#9dfdf4]/52">
+            {subline}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PurpleWarningMessage() {
   return (
-    <div className="pointer-events-none absolute left-1/2 top-[29%] z-[45] w-[78%] max-w-[20rem] -translate-x-1/2 font-mono uppercase">
-      <div className="relative border border-[#a879ff]/45 bg-[#080711]/72 px-4 py-4 shadow-[0_0_34px_rgba(117,75,203,0.18)] backdrop-blur-[5px]">
+    <div className="pointer-events-none absolute left-6 right-6 top-[34%] z-[45] font-mono uppercase">
+      <div className="relative border border-[#a879ff]/45 bg-[#080711]/76 px-4 py-4 shadow-[0_0_34px_rgba(117,75,203,0.18)] backdrop-blur-[5px]">
         <CaptureCornerBrackets compact />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8c6ff]/70 to-transparent" />
         <div className="absolute inset-y-3 left-0 w-px bg-[#a879ff]/40" />
@@ -319,12 +383,11 @@ function PurpleWarningMessage() {
           <span>OBSERVATION ERROR</span>
           <span className="tabular-nums text-[#7dff9b]/35">LOG_006</span>
         </div>
-        <div className="mt-4 text-[16px] leading-[1.35] tracking-[0.24em] text-[#efeaff]/90 drop-shadow-[0_0_12px_rgba(168,121,255,0.3)]">
+        <div className="mt-4 text-[15px] leading-[1.25] tracking-[0.16em] text-[#efeaff]/90 drop-shadow-[0_0_12px_rgba(168,121,255,0.3)]">
           <div>SINGLE VIEWPOINT</div>
           <div>INSUFFICIENT.</div>
         </div>
-        <div className="mt-4 space-y-1 text-[8px] tracking-[0.18em] text-[#d8c6ff]/62">
-          <div>VIEWPOINT COUNT: INSUFFICIENT</div>
+        <div className="mt-3 space-y-1 text-[8px] tracking-[0.14em] text-[#d8c6ff]/62">
           <div>PARTIAL ACQUISITION</div>
         </div>
       </div>
@@ -707,42 +770,12 @@ export default function ReconCaptureStage() {
           </div>
         </div>
 
-        {/* Timeline text overlay (z-30, above HUD meters) */}
-        {(timeline.captureLabel || timeline.captureSubline) && (
-          <div
-            className="absolute left-1/2 top-[68%] z-30 w-full flex flex-col items-center pointer-events-none"
-            style={{
-              transform: "translateX(-50%)",
-              ...(warningActive
-                ? {
-                    filter: "brightness(0.7) saturate(0.65) blur(0.35px) hue-rotate(-25deg)",
-                    opacity: 0.56,
-                  }
-                : {}),
-            }}
-          >
-            {timeline.captureLabel && (
-              <div className="relative whitespace-pre-line text-center font-mono text-[17px] tracking-[0.22em] text-[#2affef]/90 uppercase drop-shadow-[0_0_10px_rgba(42,255,239,0.34)] md:text-[20px]" style={{ letterSpacing: '0.18em' }}>
-                {(phase === "unstable" || phase === "fail") && (
-                  <>
-                    <span className="absolute inset-0 translate-x-[1px] text-[#a879ff]/25" aria-hidden="true">
-                      {timeline.captureLabel}
-                    </span>
-                    <span className="absolute inset-0 -translate-x-[1px] text-[#7dff9b]/15" aria-hidden="true">
-                      {timeline.captureLabel}
-                    </span>
-                  </>
-                )}
-                <span>{timeline.captureLabel}</span>
-              </div>
-            )}
-            {timeline.captureSubline && (
-              <div className="mt-1 text-center font-mono text-[11px] tracking-[0.18em] text-[#2affef]/58 uppercase md:text-[13px]" style={{ letterSpacing: '0.13em' }}>
-                {timeline.captureSubline}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Capture phase readout: diagnostic HUD module, not subtitle copy. */}
+        <PhaseDiagnosticReadout
+          phase={phase}
+          label={timeline.captureLabel}
+          subline={timeline.captureSubline}
+        />
 
         {warningActive && (
           <>
