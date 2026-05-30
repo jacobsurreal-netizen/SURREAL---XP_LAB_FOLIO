@@ -36,6 +36,13 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     active: boolean
   }>({ x: null, y: null, active: false })
   const timerRef = useRef<number | null>(null)
+  const pointerFrameRef = useRef<number | null>(null)
+  const pendingPointerRef = useRef<{
+    x: number | null
+    y: number | null
+    active: boolean
+  } | null>(null)
+  const pointerKeyRef = useRef("inactive")
 
   // Update viewport on resize
   useEffect(() => {
@@ -61,6 +68,31 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    const schedulePointerUpdate = (nextPointer: {
+      x: number | null
+      y: number | null
+      active: boolean
+    }) => {
+      pendingPointerRef.current = nextPointer
+      if (pointerFrameRef.current !== null) return
+
+      pointerFrameRef.current = window.requestAnimationFrame(() => {
+        pointerFrameRef.current = null
+        const pending = pendingPointerRef.current
+        if (!pending) return
+
+        const key = pending.active ? `${pending.x}:${pending.y}:active` : "inactive"
+        if (key === pointerKeyRef.current) return
+
+        pointerKeyRef.current = key
+        setPointer(pending)
+      })
+    }
+
+    const setPointerInactive = () => {
+      schedulePointerUpdate({ x: null, y: null, active: false })
+    }
+
     function handlePointerMove(event: PointerEvent) {
       const w = window.innerWidth
       const h = window.innerHeight
@@ -68,16 +100,31 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
       const y = event.clientY
       const inside = x >= 0 && y >= 0 && x <= w && y <= h
 
-      if (!inside) {
-        setPointer({ x: null, y: null, active: false })
+      if (
+        !inside ||
+        event.pointerType !== "mouse" ||
+        window.matchMedia("(pointer: coarse)").matches ||
+        w < 768
+      ) {
+        setPointerInactive()
         return
       }
 
-      setPointer({ x, y, active: true })
+      // Quantize normalized pointer values so telemetry only re-renders when the
+      // displayed trace meaningfully changes. CSS parallax remains separately
+      // rAF-driven in ReconShell and keeps full pointer responsiveness.
+      const normalizedX = Math.round((x / w) * 100) / 100
+      const normalizedY = Math.round((y / h) * 100) / 100
+
+      schedulePointerUpdate({
+        x: Math.round(normalizedX * w),
+        y: Math.round(normalizedY * h),
+        active: true,
+      })
     }
 
     function handlePointerLeave() {
-      setPointer({ x: null, y: null, active: false })
+      setPointerInactive()
     }
 
     window.addEventListener("pointermove", handlePointerMove)
@@ -86,6 +133,11 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     return () => {
       window.removeEventListener("pointermove", handlePointerMove)
       document.documentElement.removeEventListener("pointerleave", handlePointerLeave)
+      if (pointerFrameRef.current !== null) {
+        window.cancelAnimationFrame(pointerFrameRef.current)
+        pointerFrameRef.current = null
+      }
+      pendingPointerRef.current = null
     }
   }, [])
 
