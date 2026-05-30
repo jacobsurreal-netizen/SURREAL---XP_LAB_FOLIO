@@ -250,6 +250,19 @@ function getCRTNoiseIntensity(phase: string, elapsedSeconds: number): number {
   return 0.00;
 }
 
+// Dedicated horizontal acquisition layer: sits between scene degradation and HUD.
+function getTransmissionGrainIntensity(phase: string, elapsedSeconds: number): number {
+  const p = getPhaseProgress(phase, elapsedSeconds);
+  if (phase === "boot") return 0.10;
+  if (phase === "aligning") return 0.18 + p * 0.04;           // 0.18 → 0.22
+  if (phase === "unstable") return 0.42 + p * 0.08;           // 0.42 → 0.50
+  if (phase === "fail") return 0.85;
+  if (phase === "insufficient") return 0.45 - p * 0.04;       // 0.45 → 0.41
+  if (phase === "signal_loss") return 0.75;
+  if (phase === "diagnosis_pause") return Math.max(0, 0.04 - p * 0.04);
+  return 0.00;
+}
+
 const DIAGNOSIS_GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\[]{}<>#_";
 
 function getResolvedDiagnosisText(
@@ -616,6 +629,125 @@ function CRTInterferenceOverlay({
   );
 }
 
+function HorizontalTransmissionGrainLayer({
+  phase,
+  elapsed,
+  intensity,
+  zIndex = 24,
+}: {
+  phase: string;
+  elapsed: number;
+  intensity: number;
+  zIndex?: number;
+}) {
+  if (intensity < 0.01) return null;
+
+  const i = intensity;
+  const isUnstable = phase === "unstable";
+  const isFail = phase === "fail";
+  const isSignalLoss = phase === "signal_loss";
+  const needsScrape = isUnstable || isFail || isSignalLoss;
+  const needsTearing = isFail || isSignalLoss;
+  const rollY = (elapsed * (isFail ? 19 : isSignalLoss ? 17 : 8)) % 100;
+  const counterRollY = (78 - elapsed * (isFail ? 11 : 5)) % 100;
+  const scrapeY = (elapsed * (isFail ? 43 : isSignalLoss ? 34 : 23)) % 100;
+  const lineDrift = Math.sin(elapsed * 9.2) * i * (isFail ? 11 : isUnstable ? 6 : 2.4);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ zIndex }}
+      aria-hidden="true"
+    >
+      {/* Fine horizontal acquisition raster: bright and dark scan rows only. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "repeating-linear-gradient(180deg, rgba(202,255,239,0.055) 0 1px, transparent 1px 3px, rgba(0,0,0,0.16) 3px 4px, transparent 4px 8px)",
+          opacity: i * 0.58,
+          transform: `translateY(${Math.sin(elapsed * 5.7) * 1.4}px)`,
+          mixBlendMode: "overlay",
+        }}
+      />
+
+      {/* Broken horizontal line fragments: masked by a lateral cadence, not random noise. */}
+      <div
+        className="absolute inset-x-[-6%] inset-y-0"
+        style={{
+          background: [
+            "repeating-linear-gradient(180deg, transparent 0 11px, rgba(202,255,239,0.18) 11px 12px, transparent 12px 29px)",
+            "repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 22px, transparent 22px 42px, rgba(0,0,0,0.2) 42px 66px, transparent 66px 91px)",
+          ].join(", "),
+          backgroundBlendMode: "screen, multiply",
+          opacity: i * (isFail ? 0.46 : isUnstable ? 0.32 : 0.20),
+          transform: `translate3d(${lineDrift}px, ${Math.cos(elapsed * 3.4) * 2}px, 0)`,
+          mixBlendMode: "screen",
+          filter: "blur(0.15px)",
+        }}
+      />
+
+      {/* Slow rolling scan bands that make the feed feel reconstructed line-by-line. */}
+      <div
+        className="absolute inset-x-[-8%] h-[12vh]"
+        style={{
+          top: `${rollY}%`,
+          background:
+            "linear-gradient(180deg, transparent, rgba(42,255,239,0.07), rgba(255,255,255,0.035), transparent)",
+          opacity: i * 0.62,
+          transform: `translateX(${Math.sin(elapsed * 6.6) * i * 7}px)`,
+          mixBlendMode: "screen",
+          filter: "blur(2px)",
+        }}
+      />
+      <div
+        className="absolute inset-x-[-10%] h-[7vh]"
+        style={{
+          top: `${counterRollY}%`,
+          background:
+            "linear-gradient(180deg, transparent, rgba(0,0,0,0.32), rgba(42,255,239,0.045), transparent)",
+          opacity: i * 0.38,
+          transform: `translateX(${Math.cos(elapsed * 7.8) * i * -5}px)`,
+          mixBlendMode: "soft-light",
+          filter: "blur(1.4px)",
+        }}
+      />
+
+      {needsScrape && (
+        <div
+          className="absolute inset-x-[-12%]"
+          style={{
+            top: `${scrapeY}%`,
+            height: isFail ? "4px" : "2px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(202,255,239,0.64) 9%, transparent 22%, rgba(42,255,239,0.48) 34%, transparent 49%, rgba(255,255,255,0.5) 72%, transparent 100%)",
+            opacity: i * (isFail ? 0.86 : 0.58),
+            transform: `translateX(${Math.sin(elapsed * 21.5) * i * (isFail ? 18 : 9)}px)`,
+            mixBlendMode: "screen",
+            filter: "blur(0.25px)",
+          }}
+        />
+      )}
+
+      {needsTearing && (
+        <div
+          className="absolute inset-x-[-14%]"
+          style={{
+            top: `${(scrapeY + 17) % 100}%`,
+            height: "7vh",
+            background:
+              "repeating-linear-gradient(180deg, transparent 0 3px, rgba(202,255,239,0.2) 3px 4px, transparent 4px 9px), linear-gradient(90deg, transparent, rgba(42,255,239,0.12), transparent)",
+            opacity: i * 0.50,
+            transform: `translate3d(${Math.cos(elapsed * 18.2) * i * 22}px, 0, 0) skewY(${Math.sin(elapsed * 8.8) * i * 1.2}deg)`,
+            mixBlendMode: "screen",
+            filter: "blur(0.8px)",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -663,6 +795,7 @@ export default function ReconCaptureStage() {
     const diagnosisSettled = diagnosisProgress > (isMachineDiagnosis ? 0.82 : 0.68);
 
     const diagCRTIntensity = getCRTNoiseIntensity(timeline.capturePhase, elapsed);
+    const diagTransmissionIntensity = getTransmissionGrainIntensity(timeline.capturePhase, elapsed);
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#040b0a] select-none">
         <style>{HUD_INSTABILITY_CSS}</style>
@@ -670,6 +803,12 @@ export default function ReconCaptureStage() {
           phase={timeline.capturePhase}
           elapsed={elapsed}
           noiseIntensity={diagCRTIntensity}
+        />
+        <HorizontalTransmissionGrainLayer
+          phase={timeline.capturePhase}
+          elapsed={elapsed}
+          intensity={diagTransmissionIntensity}
+          zIndex={24}
         />
         {diagnosisText && (
           <div
@@ -818,6 +957,7 @@ export default function ReconCaptureStage() {
   const ghostBandBlur =
     phase === "unstable" ? 1.1 + resonancePressure * 1.8 : phase === "fail" ? 5.4 : 0.55 + visualPressure * 1.7;
   const crtNoiseIntensity = getCRTNoiseIntensity(phase, elapsed);
+  const transmissionGrainIntensity = getTransmissionGrainIntensity(phase, elapsed);
 
   // === HUD instability — Pass 5: phase-driven HUD life ===
   const hudLevel = getHudInstabilityLevel(phase, elapsed);
@@ -1002,6 +1142,13 @@ export default function ReconCaptureStage() {
 
         {/* CRT noise + signal interference layers (z-23) */}
         <CRTInterferenceOverlay phase={phase} elapsed={elapsed} noiseIntensity={crtNoiseIntensity} />
+
+        {/* Horizontal transmission grain (z-24): acquisition layer between scene and HUD. */}
+        <HorizontalTransmissionGrainLayer
+          phase={phase}
+          elapsed={elapsed}
+          intensity={transmissionGrainIntensity}
+        />
 
         {(phase === "unstable" || phase === "fail") && (
           <div className="pointer-events-none absolute left-1/2 top-[24%] z-30 -translate-x-1/2 font-mono text-[8px] tracking-[0.2em] text-[#2affef] opacity-45">
