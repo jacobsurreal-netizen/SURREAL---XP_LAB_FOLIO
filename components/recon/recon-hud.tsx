@@ -209,7 +209,7 @@ function GatewayModal({ open, onClose, onStartDirectAnalysis }: GatewayModalProp
         )}
 
         {isReady && (
-          <div className="relative mb-4 bg-black/40 px-4 py-4">
+          <div className="recon-transfer-active relative mb-4 bg-black/40 px-4 py-4">
             <HudCornerBrackets compact />
             <div className="space-y-3 text-center font-mono">
               <p className="text-[10px] tracking-[0.28em] text-[color:var(--hud-accent)]">
@@ -371,10 +371,31 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
             recon-hud-primary-glitch 9s steps(1, end) infinite;
         }
 
+        @keyframes recon-transfer-active {
+          0%,
+          100% {
+            border-color: color-mix(in srgb, var(--hud-accent) 18%, transparent);
+            box-shadow: inset 0 0 12px color-mix(in srgb, var(--hud-glow) 10%, transparent);
+          }
+          50% {
+            border-color: color-mix(in srgb, var(--hud-accent) 42%, transparent);
+            box-shadow: inset 0 0 22px color-mix(in srgb, var(--hud-glow) 24%, transparent);
+          }
+        }
+
+        .recon-transfer-active {
+          border: 1px solid color-mix(in srgb, var(--hud-accent) 18%, transparent);
+          animation: recon-transfer-active 2.6s ease-in-out infinite;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .recon-hud-primary-line {
             animation: none;
             text-shadow: 0 0 8px color-mix(in srgb, var(--hud-glow) 50%, transparent);
+          }
+
+          .recon-transfer-active {
+            animation: none;
           }
         }
       `}</style>
@@ -387,7 +408,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
         <div className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2">
           <a
             href={RECON_AR_URL}
-            className="group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-5 py-2.5 text-center font-mono transition duration-200 hover:bg-[color:var(--hud-accent-dim)]"
+            className="recon-life-armed group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-5 py-2.5 text-center font-mono transition duration-200 hover:bg-[color:var(--hud-accent-dim)]"
             style={{
               boxShadow:
                 "0 0 0 1px color-mix(in srgb, var(--hud-accent-dim) 50%, transparent), 0 0 16px color-mix(in srgb, var(--hud-glow) 16%, transparent)",
@@ -428,6 +449,7 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
           onRequestArLink={!isMobile ? () => setIsGatewayOpen(true) : undefined}
           suppressGatewayCommand={isDirectProtocolActive}
           telemetry={telemetry}
+          gatewayModalOpen={!isMobile && isGatewayOpen}
         />
       </div>
 

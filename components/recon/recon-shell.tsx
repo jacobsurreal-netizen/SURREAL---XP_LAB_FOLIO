@@ -8,7 +8,7 @@ import { ReconInitOverlay } from "./recon-init-overlay"
 import { useReconTelemetry } from "./use-recon-telemetry"
 import { ReconOpticalOverlay } from "./recon-optical-overlay"
 import { useReconInitSequence } from "./use-recon-init-sequence"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { useSmoothedProgress } from "@/hooks/use-smoothed-progress"
 
 interface ReconShellProps {
@@ -29,6 +29,8 @@ export function ReconShell({ children, bypassInit = false, captureInstability }:
   const { initPhase, bootStep, startBoot } = useReconInitSequence();
   const initPhaseRef = useRef(initPhase);
   initPhaseRef.current = initPhase;
+
+  const hudContainerRef = useRef<HTMLDivElement>(null);
 
   const [progress, setProgress] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -75,6 +77,45 @@ export function ReconShell({ children, bypassInit = false, captureInstability }:
     return () => window.removeEventListener("scroll", handleScroll);
   }, [bypassInit]);
 
+  // ── Pointer parallax ───────────────────────────────────────────────────────
+  // Writes normalized pointer position (-1..1) into CSS custom properties on the
+  // HUD container via rAF (no React re-render). HUD layers consume these as
+  // --recon-parallax-x / --recon-parallax-y. Mouse-only, desktop-only, and fully
+  // disabled under prefers-reduced-motion; touch falls back to the 0 default.
+  useEffect(() => {
+    if (!mounted || isMobile) return;
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const el = hudContainerRef.current;
+    if (!el) return;
+
+    let raf = 0;
+    let nx = 0;
+    let ny = 0;
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType && event.pointerType !== "mouse") return;
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      nx = Math.max(-1, Math.min(1, (event.clientX / w) * 2 - 1));
+      ny = Math.max(-1, Math.min(1, (event.clientY / h) * 2 - 1));
+      if (!raf) {
+        raf = window.requestAnimationFrame(() => {
+          raf = 0;
+          el.style.setProperty("--recon-parallax-x", nx.toFixed(3));
+          el.style.setProperty("--recon-parallax-y", ny.toFixed(3));
+        });
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      if (raf) cancelAnimationFrame(raf);
+      el.style.setProperty("--recon-parallax-x", "0");
+      el.style.setProperty("--recon-parallax-y", "0");
+    };
+  }, [mounted, isMobile]);
+
   // Desktop/mobile sector logic
   const mode = "COLOR";
   let sectorIndex = 0;
@@ -90,7 +131,11 @@ export function ReconShell({ children, bypassInit = false, captureInstability }:
 
   return (
     <>
-      <div className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none">
+      <div
+        ref={hudContainerRef}
+        className="fixed inset-0 z-30 w-screen h-screen overflow-hidden bg-black pointer-events-none"
+        style={{ "--recon-parallax-x": 0, "--recon-parallax-y": 0 } as CSSProperties}
+      >
         <div className="absolute inset-0 z-0 pointer-events-none">
           <WorldLayer progress={smoothedProgress} sector={sectorName} mode={mode} />
         </div>

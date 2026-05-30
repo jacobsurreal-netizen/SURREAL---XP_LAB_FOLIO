@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type CSSProperties } from "react"
 
 import type { ReconTelemetry } from "./use-recon-telemetry"
 
@@ -12,7 +12,137 @@ export interface ReconHudCompositionProps {
   onRequestArLink?: () => void
   suppressGatewayCommand?: boolean
   telemetry?: ReconTelemetry
+  gatewayModalOpen?: boolean
 }
+
+// ─── HUD life (signal presence) ──────────────────────────────────────────────
+//
+// Deterministic, low-amplitude "instrument is alive" behavior. Intensity is a
+// single inherited CSS custom property (--recon-life) set per RECON state. All
+// motion is CSS keyframes (no randomness, no JS timers) and is fully disabled
+// under prefers-reduced-motion. Amplitudes are intentionally tiny so the HUD
+// reads as a live probe under subtle signal pressure — never a glitch reel.
+
+function getLifeIntensity(
+  sectorIndex: number,
+  gatewayModalOpen?: boolean,
+  isMobile?: boolean,
+): number {
+  let value: number
+  if (gatewayModalOpen) value = 0.25
+  else if (sectorIndex >= 2) value = 0.45
+  else if (sectorIndex === 1) value = 0.35
+  else value = 0.15
+  // Mobile: halve all signal life (lower power budget, no pointer parallax).
+  return isMobile ? value * 0.5 : value
+}
+
+const RECON_HUD_LIFE_STYLE = `
+  @keyframes recon-hud-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: calc(1 - 0.06 * var(--recon-life, 0.15)); }
+  }
+  @keyframes recon-hud-frame-breathe {
+    0%, 100% { opacity: calc(1 - 0.22 * var(--recon-life, 0.15)); }
+    50% { opacity: 1; }
+  }
+  @keyframes recon-hud-signal {
+    0%, 100% {
+      opacity: 0.78;
+      text-shadow: 0 0 2px color-mix(in srgb, var(--hud-glow) 25%, transparent);
+    }
+    50% {
+      opacity: 0.95;
+      text-shadow: 0 0 calc(3px + 5px * var(--recon-life, 0.15)) color-mix(in srgb, var(--hud-glow) 55%, transparent);
+    }
+  }
+  /* Centering is handled by Tailwind v4's standalone 'translate' property, so   */
+  /* the reticle pulse animates only 'transform: scale' + opacity (no translate).*/
+  @keyframes recon-hud-reticle {
+    0%, 100% { opacity: 0.34; transform: scale(1); }
+    50% {
+      opacity: calc(0.34 + 0.16 * var(--recon-life, 0.15));
+      transform: scale(calc(1 + 0.025 * var(--recon-life, 0.15)));
+    }
+  }
+  @keyframes recon-hud-jitter {
+    0%, 92%, 100% { transform: translate(0, 0); }
+    94% { transform: translate(0.4px, -0.3px); }
+    96% { transform: translate(-0.3px, 0.2px); }
+    98% { transform: translate(0.2px, 0.3px); }
+  }
+  @keyframes recon-hud-flicker {
+    0%, 87%, 100% { opacity: 0.8; }
+    89% { opacity: 0.5; }
+    90% { opacity: 0.85; }
+    92% { opacity: 0.58; }
+    93% { opacity: 0.82; }
+  }
+  @keyframes recon-hud-armed {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--hud-accent-dim) 50%, transparent),
+        0 0 18px color-mix(in srgb, var(--hud-glow) 16%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--hud-accent) 45%, transparent),
+        0 0 28px color-mix(in srgb, var(--hud-glow) 30%, transparent);
+    }
+  }
+
+  .recon-hud-life { animation: recon-hud-breathe 7s ease-in-out infinite; }
+  .recon-life-frame { animation: recon-hud-frame-breathe 9s ease-in-out infinite; }
+  .recon-life-signal { animation: recon-hud-signal 4.5s ease-in-out infinite; }
+  .recon-life-reticle { animation: recon-hud-reticle 6s ease-in-out infinite; }
+  .recon-life-jitter { animation: recon-hud-jitter 11s steps(1, end) infinite; }
+  .recon-life-armed { animation: recon-hud-armed 2.8s ease-in-out infinite; }
+  /* ANALYSIS: baseline signal shimmer (text-shadow) + allowed line flicker (opacity). */
+  .recon-life-signal-flicker {
+    animation:
+      recon-hud-signal 4.5s ease-in-out infinite,
+      recon-hud-flicker 8s steps(1, end) infinite;
+  }
+
+  /* ── Pointer parallax ───────────────────────────────────────────────────── */
+  /* Reads --recon-parallax-x / --recon-parallax-y (-1..1) set on the RECON     */
+  /* shell container via rAF. Uses 'transform' (free on Tailwind v4 centered    */
+  /* elements, which use the 'translate' property) so centering is preserved.   */
+  /* Amplitudes: frame layers 6px, panels 3px, core/reticle 4px.                */
+  .recon-parallax-frame {
+    transform: translate3d(calc(var(--recon-parallax-x, 0) * 6px), calc(var(--recon-parallax-y, 0) * 6px), 0);
+    transition: transform 180ms ease-out;
+    will-change: transform;
+  }
+  .recon-parallax-panel {
+    transform: translate3d(calc(var(--recon-parallax-x, 0) * -3px), calc(var(--recon-parallax-y, 0) * -3px), 0);
+    transition: transform 180ms ease-out;
+    will-change: transform;
+  }
+  .recon-parallax-core {
+    transform: translate3d(calc(var(--recon-parallax-x, 0) * 4px), calc(var(--recon-parallax-y, 0) * 4px), 0);
+    transition: transform 220ms ease-out;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .recon-hud-life,
+    .recon-life-frame,
+    .recon-life-signal,
+    .recon-life-reticle,
+    .recon-life-jitter,
+    .recon-life-signal-flicker,
+    .recon-life-armed {
+      animation: none !important;
+    }
+    .recon-parallax-frame,
+    .recon-parallax-panel,
+    .recon-parallax-core {
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+`
 
 // ─── Sector-specific HUD data ───────────────────────────────────────────────
 
@@ -178,7 +308,7 @@ function CompositionBrackets({ compact }: { compact?: boolean }) {
   const colorClass = "text-[color:var(--hud-accent)] opacity-25"
 
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div className="recon-life-frame pointer-events-none absolute inset-0" aria-hidden="true">
       <svg className={`absolute top-0 left-0 ${size} ${colorClass}`} viewBox="0 0 16 16">
         <path d="M0 16 V0 H16" fill="none" stroke="currentColor" strokeWidth="1" />
       </svg>
@@ -200,7 +330,7 @@ function TCenterMarker({ small }: { small?: boolean }) {
   return (
     <svg
       viewBox="0 0 40 40"
-      className={`${size} text-[color:var(--hud-accent)] opacity-[0.38] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+      className={`recon-life-reticle ${size} text-[color:var(--hud-accent)] opacity-[0.38] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
       aria-hidden="true"
     >
       <line x1="20" y1="0" x2="20" y2="15" stroke="currentColor" strokeWidth="1" />
@@ -232,7 +362,7 @@ function ScanRing({ small }: { small?: boolean }) {
 function DesktopFrame() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 hidden h-full w-full text-[color:var(--hud-accent)] opacity-[0.17] md:block"
+      className="recon-life-frame recon-parallax-frame pointer-events-none absolute inset-0 hidden h-full w-full text-[color:var(--hud-accent)] opacity-[0.17] md:block"
       preserveAspectRatio="none"
       viewBox="0 0 1000 1000"
       aria-hidden="true"
@@ -256,7 +386,7 @@ function DesktopFrame() {
 function MobileFrame() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 h-full w-full text-[color:var(--hud-accent)] opacity-[0.15] md:hidden"
+      className="recon-life-frame pointer-events-none absolute inset-0 h-full w-full text-[color:var(--hud-accent)] opacity-[0.15] md:hidden"
       preserveAspectRatio="none"
       viewBox="0 0 400 800"
       aria-hidden="true"
@@ -292,7 +422,7 @@ function StaticMeterShell({
         }`}
       >
         <span className="max-w-[9rem] truncate">{label}</span>
-        <span className="tabular-nums opacity-80 text-[color:var(--hud-accent)]">{value || "—"}</span>
+        <span className="recon-life-signal tabular-nums opacity-80 text-[color:var(--hud-accent)]">{value || "—"}</span>
       </div>
       <div
         className={`relative w-full overflow-hidden bg-[color:var(--hud-accent-dim)] ${
@@ -330,7 +460,7 @@ function TopStatusStrip({
       <span className="h-3 w-px bg-[color:var(--hud-accent-dim)]" aria-hidden="true" />
       <span>MODE: RECON</span>
       <span className="h-3 w-px bg-[color:var(--hud-accent-dim)]" aria-hidden="true" />
-      <span className="tabular-nums">PROGRESS: {progressPct}%</span>
+      <span className="recon-life-signal tabular-nums">PROGRESS: {progressPct}%</span>
     </div>
   )
 }
@@ -343,13 +473,15 @@ function TopStatusStrip({
  */
 function ReticleLabel({ sectorIndex }: { sectorIndex: number }) {
   const label = RETICLE_LABELS[Math.min(sectorIndex, 2)]
+  // Slight acquisition jitter once the probe is actively analysing (sector >= 1).
+  const jitterClass = sectorIndex >= 1 ? "recon-life-jitter" : ""
   return (
     <div
       className="absolute left-1/2 -translate-x-1/2"
       style={{ bottom: "calc(50% - clamp(160px, 25vmin, 270px))" }}
       aria-hidden="true"
     >
-      <div className="flex items-center gap-1.5">
+      <div className={`${jitterClass} flex items-center gap-1.5`}>
         {/* tick mark left */}
         <div className="h-px w-3 bg-[color:var(--hud-accent)] opacity-30" />
         <span
@@ -381,7 +513,7 @@ function LeftScannerPanel({
   const panelTitle = PANEL_TITLES[Math.min(sectorIndex, 2)]
   const rows = getDesktopTelemetryRows(telemetry, displayReady)
   return (
-    <div className="absolute left-3 top-1/2 w-48 -translate-y-1/2 opacity-90 lg:left-6 lg:w-56">
+    <div className="recon-parallax-panel absolute left-3 top-1/2 w-48 -translate-y-1/2 opacity-90 lg:left-6 lg:w-56">
       <div className="relative p-2.5 lg:p-3">
         <CompositionBrackets />
         <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
@@ -394,7 +526,7 @@ function LeftScannerPanel({
               className="flex items-baseline justify-between gap-2 font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
             >
               <span className="shrink-0">{item.label}</span>
-              <span className="shrink-0 whitespace-nowrap tabular-nums text-[color:var(--hud-accent)] opacity-80">
+              <span className="recon-life-signal shrink-0 whitespace-nowrap tabular-nums text-[color:var(--hud-accent)] opacity-80">
                 {item.value}
               </span>
             </div>
@@ -409,8 +541,11 @@ function LeftScannerPanel({
 
 function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
   const rows = RIGHT_PANEL_DATA[Math.min(sectorIndex, 2)]
+  // ANALYSIS sector: meter/log values get a small allowed line flicker on top
+  // of the baseline signal shimmer to read as increased acquisition activity.
+  const valueLifeClass = sectorIndex === 1 ? "recon-life-signal-flicker" : "recon-life-signal"
   return (
-    <div className="absolute right-3 top-1/2 w-40 -translate-y-1/2 opacity-90 lg:right-6 lg:w-48">
+    <div className="recon-parallax-panel absolute right-3 top-1/2 w-40 -translate-y-1/2 opacity-90 lg:right-6 lg:w-48">
       <div className="relative p-2.5 lg:p-3">
         <CompositionBrackets />
         <div className="mb-2 font-mono text-[7px] tracking-[0.26em] text-[color:var(--hud-text-dim)] lg:mb-2.5">
@@ -423,7 +558,7 @@ function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
               className="flex justify-between font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
             >
               <span>{item.label}</span>
-              <span className="text-[color:var(--hud-accent)] opacity-80">{item.value}</span>
+              <span className={`${valueLifeClass} text-[color:var(--hud-accent)] opacity-80`}>{item.value}</span>
             </div>
           ))}
         </div>
@@ -444,7 +579,7 @@ function GatewayCommandTrigger({ onRequestArLink }: { onRequestArLink: () => voi
       <button
         type="button"
         onClick={onRequestArLink}
-        className="group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-6 py-3 font-mono transition duration-200 hover:border-[color:var(--hud-accent)] hover:bg-[color:var(--hud-accent-dim)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--hud-accent)]"
+        className="recon-life-armed group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-6 py-3 font-mono transition duration-200 hover:border-[color:var(--hud-accent)] hover:bg-[color:var(--hud-accent-dim)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--hud-accent)]"
         style={{
           boxShadow:
             "0 0 0 1px color-mix(in srgb, var(--hud-accent-dim) 50%, transparent), 0 0 20px color-mix(in srgb, var(--hud-glow) 18%, transparent)",
@@ -547,7 +682,7 @@ function DesktopComposition({
 
       <RightDiagnosticPanel sectorIndex={sectorIndex} />
 
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="recon-parallax-core absolute inset-0 flex items-center justify-center">
         <ScanRing />
       </div>
 
@@ -609,7 +744,10 @@ function MobileComposition({
     <div className="pointer-events-none absolute inset-0 flex flex-col md:hidden" aria-hidden="true">
       <MobileFrame />
 
-      <div className="flex-shrink-0 px-3 pb-1.5 pt-4">
+      <div
+        className="flex-shrink-0 px-3 pb-1.5 pt-7"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 28px)" }}
+      >
         <div className="mb-1.5 text-center">
           <div className="font-mono text-[6px] tracking-[0.26em] text-[color:var(--hud-text-dim)] opacity-80">
             DEEP-SPACE RECON
@@ -699,32 +837,49 @@ export function ReconHudComposition({
   onRequestArLink,
   suppressGatewayCommand,
   telemetry,
+  gatewayModalOpen,
 }: ReconHudCompositionProps) {
   // Prefer telemetry values if provided
   const safeIndex = typeof telemetry?.sectorIndex === "number" ? telemetry.sectorIndex : Math.min(Math.max(0, sectorIndex), 2)
   const displaySectorName = telemetry?.sectorName ?? sectorName
   const displayProgress = typeof telemetry?.progressPercent === "number" ? telemetry.progressPercent : Math.round(progress * 100)
 
+  const lifeIntensity = getLifeIntensity(safeIndex, gatewayModalOpen, isMobile)
+  const lifeStyle = { "--recon-life": lifeIntensity } as CSSProperties
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-      {!isMobile && (
-        <DesktopComposition
-          sectorIndex={safeIndex}
-          sectorName={displaySectorName}
-          progress={displayProgress / 100}
-          onRequestArLink={onRequestArLink}
-          suppressGatewayCommand={suppressGatewayCommand}
-          telemetry={telemetry}
-        />
-      )}
-      {isMobile && (
-        <MobileComposition
-          sectorName={displaySectorName}
-          progress={displayProgress / 100}
-          sectorIndex={safeIndex}
-          telemetry={telemetry}
-        />
-      )}
-    </div>
+    <>
+      <style>{RECON_HUD_LIFE_STYLE}</style>
+      {/* Outer layer carries the life intensity var + the gateway-modal dim.    */}
+      {/* Inner layer carries the global breathe so it can't override the dim.   */}
+      <div
+        className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-500 ${
+          gatewayModalOpen ? "opacity-[0.82]" : "opacity-100"
+        }`}
+        style={lifeStyle}
+        aria-hidden="true"
+      >
+        <div className="recon-hud-life absolute inset-0">
+          {!isMobile && (
+            <DesktopComposition
+              sectorIndex={safeIndex}
+              sectorName={displaySectorName}
+              progress={displayProgress / 100}
+              onRequestArLink={onRequestArLink}
+              suppressGatewayCommand={suppressGatewayCommand}
+              telemetry={telemetry}
+            />
+          )}
+          {isMobile && (
+            <MobileComposition
+              sectorName={displaySectorName}
+              progress={displayProgress / 100}
+              sectorIndex={safeIndex}
+              telemetry={telemetry}
+            />
+          )}
+        </div>
+      </div>
+    </>
   )
 }

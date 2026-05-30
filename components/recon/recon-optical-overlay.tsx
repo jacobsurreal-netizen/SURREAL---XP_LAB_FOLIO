@@ -21,11 +21,42 @@ export function ReconOpticalOverlay() {
           animation: recon-optical-sweep 15s linear infinite;
         }
 
+        @keyframes recon-optical-breathe {
+          0%,
+          100% {
+            opacity: 0.05;
+          }
+          50% {
+            opacity: 0.085;
+          }
+        }
+
+        .recon-optical-breathe {
+          animation: recon-optical-breathe 9s ease-in-out infinite;
+        }
+
+        /* Gentle pointer parallax on the lens ring so the optical layer tracks   */
+        /* the observer along with the HUD (reads parallax vars from the shell).  */
+        .recon-optical-parallax {
+          transform: translate3d(calc(var(--recon-parallax-x, 0) * 3px), calc(var(--recon-parallax-y, 0) * 3px), 0);
+          transition: transform 240ms ease-out;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .recon-optical-sweep {
             animation: none;
             transform: translateY(35vh);
             opacity: 0.03;
+          }
+
+          .recon-optical-breathe {
+            animation: none;
+            opacity: 0.065;
+          }
+
+          .recon-optical-parallax {
+            transform: none;
+            transition: none;
           }
         }
       `}</style>
@@ -100,9 +131,9 @@ export function ReconOpticalOverlay() {
           />
         </div>
 
-        {/* Subtle center lens ring */}
+        {/* Subtle center lens ring — gentle signal breathe for HUD cohesion */}
         <div
-          className="absolute inset-0"
+          className="recon-optical-breathe recon-optical-parallax absolute inset-0"
           style={{
             opacity: 0.065,
             background:
