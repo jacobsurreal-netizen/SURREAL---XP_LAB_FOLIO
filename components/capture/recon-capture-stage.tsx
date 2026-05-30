@@ -167,6 +167,74 @@ function isFinalDiagnosisPhase(phase: string) {
   );
 }
 
+// HUD instability intensity per phase (0 = steady, 1 = peak stress)
+function getHudInstabilityLevel(phase: string, elapsedSeconds: number): number {
+  const p = getPhaseProgress(phase, elapsedSeconds);
+  if (phase === "boot") return 0.10;
+  if (phase === "aligning") return 0.20 + p * 0.10;
+  if (phase === "unstable") return 0.42 + p * 0.20;
+  if (phase === "fail") return 0.85;
+  if (phase === "insufficient") return 0.44 - p * 0.08;
+  if (phase === "signal_loss") return 0.90;
+  return 0.00;
+}
+
+// CSS keyframes for phase-driven HUD life — deterministic, no dependencies
+const HUD_INSTABILITY_CSS = `
+  @keyframes hud-ambient-pulse {
+    0%, 100% { opacity: 1; }
+    46% { opacity: 0.87; }
+    54% { opacity: 0.93; }
+  }
+  @keyframes hud-flicker-light {
+    0%, 100% { opacity: 1; }
+    7% { opacity: 0.82; }
+    8.5% { opacity: 0.97; }
+    18% { opacity: 0.78; }
+    19% { opacity: 1; }
+    55% { opacity: 0.86; }
+    56% { opacity: 1; }
+    79% { opacity: 0.91; }
+  }
+  @keyframes hud-flicker-heavy {
+    0%, 100% { opacity: 1; }
+    4% { opacity: 0.64; }
+    5% { opacity: 0.93; }
+    6.5% { opacity: 0.48; }
+    8% { opacity: 0.87; }
+    28% { opacity: 0.72; }
+    29% { opacity: 1; }
+    63% { opacity: 0.56; }
+    65% { opacity: 0.92; }
+    66.5% { opacity: 0.74; }
+    68% { opacity: 1; }
+  }
+  @keyframes hud-dropout {
+    0% { opacity: 1; }
+    10% { opacity: 0.90; }
+    18% { opacity: 0.22; }
+    21% { opacity: 0.78; }
+    25% { opacity: 0.08; }
+    29% { opacity: 0.84; }
+    34% { opacity: 0.44; }
+    40% { opacity: 0.92; }
+    50% { opacity: 0.66; }
+    56% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  @keyframes hud-jitter {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    22% { transform: translateX(-0.6px) translateY(0.3px); }
+    48% { transform: translateX(0.9px) translateY(-0.4px); }
+    72% { transform: translateX(-0.4px) translateY(0.6px); }
+  }
+  @keyframes hud-border-breathe {
+    0%, 100% { opacity: 1; }
+    44% { opacity: 0.68; }
+    58% { opacity: 0.80; }
+  }
+`;
+
 // Phase-driven CRT noise intensity (0 = silent, 1 = peak degradation)
 function getCRTNoiseIntensity(phase: string, elapsedSeconds: number): number {
   const p = getPhaseProgress(phase, elapsedSeconds);
@@ -597,13 +665,20 @@ export default function ReconCaptureStage() {
     const diagCRTIntensity = getCRTNoiseIntensity(timeline.capturePhase, elapsed);
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#040b0a] select-none">
+        <style>{HUD_INSTABILITY_CSS}</style>
         <CRTInterferenceOverlay
           phase={timeline.capturePhase}
           elapsed={elapsed}
           noiseIntensity={diagCRTIntensity}
         />
         {diagnosisText && (
-          <div className="relative px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]" style={{ zIndex: 30 }}>
+          <div
+            className="relative px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]"
+            style={{
+              zIndex: 30,
+              animation: timeline.capturePhase === "signal_loss" ? "hud-dropout 0.46s linear" : undefined,
+            }}
+          >
             {resolvingDiagnosis && !diagnosisSettled && (
               <>
                 <span
@@ -744,6 +819,52 @@ export default function ReconCaptureStage() {
     phase === "unstable" ? 1.1 + resonancePressure * 1.8 : phase === "fail" ? 5.4 : 0.55 + visualPressure * 1.7;
   const crtNoiseIntensity = getCRTNoiseIntensity(phase, elapsed);
 
+  // === HUD instability — Pass 5: phase-driven HUD life ===
+  const hudLevel = getHudInstabilityLevel(phase, elapsed);
+  const isFailPhase = phase === "fail";
+
+  // Pulse/flicker duration decreases as stress rises (shorter = more erratic)
+  const hudPulseDur =
+    phase === "boot" ? "4.8s" :
+    phase === "aligning" ? "3.3s" :
+    phase === "unstable" ? "2.1s" :
+    phase === "insufficient" ? "3.8s" :
+    "6s";
+  const hudJitterDur = phase === "unstable" ? "1.2s" : phase === "aligning" ? "2.8s" : "9s";
+
+  // Top HUD panels: dropout for fail, heavy/light flicker for unstable/aligning, ambient pulse otherwise
+  const hudTopAnim = isFailPhase
+    ? "hud-dropout 0.68s linear"
+    : phase === "unstable"
+    ? `hud-flicker-heavy ${hudPulseDur} ease-in-out infinite, hud-jitter ${hudJitterDur} linear infinite`
+    : phase === "aligning"
+    ? `hud-flicker-light ${hudPulseDur} ease-in-out infinite, hud-jitter ${hudJitterDur} linear infinite`
+    : `hud-ambient-pulse ${hudPulseDur} ease-in-out infinite`;
+
+  // Bottom panel: slightly delayed relative to top for organic non-sync
+  const hudBottomAnim = isFailPhase
+    ? "hud-dropout 0.68s 0.09s linear"
+    : phase === "unstable"
+    ? `hud-flicker-heavy ${hudPulseDur} 0.44s ease-in-out infinite, hud-jitter ${hudJitterDur} 0.22s linear infinite`
+    : phase === "aligning"
+    ? `hud-flicker-light ${hudPulseDur} 0.6s ease-in-out infinite`
+    : `hud-ambient-pulse ${hudPulseDur} 1.5s ease-in-out infinite`;
+
+  // Frame lines / brackets: breathe at phase-matched rate
+  const hudFrameAnim = isFailPhase
+    ? "hud-border-breathe 0.32s ease-in-out infinite"
+    : phase === "unstable"
+    ? `hud-border-breathe ${hudPulseDur} 0.9s ease-in-out infinite`
+    : phase === "insufficient"
+    ? "hud-border-breathe 3.5s ease-in-out infinite"
+    : `hud-border-breathe ${phase === "aligning" ? "4.2s" : "7s"} ease-in-out infinite`;
+
+  // Main label glow oscillates deterministically via elapsed (no extra keyframe needed)
+  const hudLabelShadow = `0 0 ${(7 + Math.sin(elapsed * (isFailPhase ? 18 : phase === "unstable" ? 8.5 : 3.2)) * hudLevel * 10).toFixed(1)}px rgba(42,255,239,${(0.18 + hudLevel * 0.32).toFixed(2)})`;
+
+  // Secondary microcopy dims proportionally to stress
+  const microOpacity = isFailPhase ? 0.42 : phase === "unstable" ? 0.54 : phase === "aligning" ? 0.60 : phase === "insufficient" ? 0.58 : 0.65;
+
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
   // Centered, with dark void outside
@@ -760,6 +881,7 @@ export default function ReconCaptureStage() {
           boxShadow: '0 0 0 9999px #040b0a',
         }}
       >
+        <style>{HUD_INSTABILITY_CSS}</style>
         {/* Real RECON scene, forced mobile mode */}
         <div
           className="absolute inset-0 z-0"
@@ -899,12 +1021,19 @@ export default function ReconCaptureStage() {
               : undefined
           }
         >
-          <CaptureFrameLines />
+          {/* Frame lines pulsed by border-breathe — wrapper carries animation, inner geometry unchanged */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ animation: hudFrameAnim }}
+            aria-hidden="true"
+          >
+            <CaptureFrameLines />
+          </div>
 
-          <div className="absolute inset-x-4 top-4 flex flex-col items-center gap-2">
+          <div className="absolute inset-x-4 top-4 flex flex-col items-center gap-2" style={{ animation: hudTopAnim }}>
             <CaptureHudPanel className="w-full max-w-[22rem]">
               <div className="text-center font-mono uppercase text-[#2affef]">
-                <div className="text-[11px] tracking-[0.24em] opacity-90">DEEP_SPACE_RECON</div>
+                <div className="text-[11px] tracking-[0.24em] opacity-90" style={{ textShadow: hudLabelShadow }}>DEEP_SPACE_RECON</div>
                 <div className="mt-2 flex items-center justify-center gap-4 text-[8px] tracking-[0.18em] opacity-65">
                   <span>MODE: CAPTURE</span>
                   <span className="h-3 w-px bg-[#2affef]/20" aria-hidden="true" />
@@ -921,12 +1050,12 @@ export default function ReconCaptureStage() {
             </CaptureHudPanel>
           </div>
 
-          <div className="absolute inset-x-4 bottom-4 flex justify-center">
+          <div className="absolute inset-x-4 bottom-4 flex justify-center" style={{ animation: hudBottomAnim }}>
             <CaptureHudPanel className="w-full max-w-[22rem]">
               <div className="flex flex-col items-center gap-1 font-mono text-[#2affef] uppercase">
                 <span className="text-[10px] tracking-[0.2em] opacity-85">LOG_000 // DORMANT</span>
-                <span className="text-[8px] tracking-[0.18em] opacity-65">ORIGIN VECTOR: TOKEN-LOCKED</span>
-                <span className="text-[8px] tracking-[0.18em] opacity-65">SIGNAL TRACE: PARTIAL</span>
+                <span className="text-[8px] tracking-[0.18em]" style={{ opacity: microOpacity }}>ORIGIN VECTOR: TOKEN-LOCKED</span>
+                <span className="text-[8px] tracking-[0.18em]" style={{ opacity: microOpacity }}>SIGNAL TRACE: PARTIAL</span>
               </div>
             </CaptureHudPanel>
           </div>
