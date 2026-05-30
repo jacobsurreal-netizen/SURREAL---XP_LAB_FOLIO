@@ -252,6 +252,86 @@ function CaptureMeter({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PurpleWarningOverlay({ elapsed }: { elapsed: number }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[36] overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 82% 62% at 50% 47%, rgba(168,121,255,0.22), rgba(71,45,126,0.34) 38%, rgba(8,6,18,0.62) 82%), linear-gradient(180deg, rgba(32,19,56,0.24), rgba(9,7,19,0.58))",
+          backdropFilter: "blur(4.2px) saturate(0.72) brightness(0.64)",
+          WebkitBackdropFilter: "blur(4.2px) saturate(0.72) brightness(0.64)",
+        }}
+      />
+      <div
+        className="absolute -inset-8"
+        style={{
+          background:
+            "radial-gradient(ellipse 46% 24% at 48% 38%, rgba(216,198,255,0.18), transparent 66%), radial-gradient(ellipse 34% 18% at 58% 62%, rgba(128,82,214,0.22), transparent 72%), radial-gradient(ellipse 68% 30% at 40% 72%, rgba(54,31,96,0.24), transparent 76%)",
+          filter: "blur(13px)",
+          opacity: 0.82,
+          transform: `translate3d(${Math.sin(elapsed * 1.4) * 7}px, ${Math.cos(elapsed * 1.1) * 9}px, 0)`,
+          mixBlendMode: "screen",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "repeating-linear-gradient(96deg, transparent 0 9px, rgba(168,121,255,0.055) 10px 11px, transparent 12px 24px), repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 7px)",
+          opacity: 0.48,
+          transform: `translateY(${Math.sin(elapsed * 8.5) * 2}px)`,
+          mixBlendMode: "soft-light",
+        }}
+      />
+      <div
+        className="absolute inset-x-[-10%] top-[36%] h-[28vh] rotate-[-3deg]"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent, rgba(168,121,255,0.18), rgba(64,38,118,0.18), transparent)",
+          filter: "blur(8px)",
+          opacity: 0.68,
+          transform: `translate3d(${Math.sin(elapsed * 2.2) * 11}px, ${Math.cos(elapsed * 1.8) * 5}px, 0) rotate(-3deg)`,
+          mixBlendMode: "screen",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 78% 68% at 50% 50%, transparent 44%, rgba(4,3,10,0.28) 72%, rgba(4,3,10,0.7) 100%)",
+        }}
+      />
+    </div>
+  );
+}
+
+function PurpleWarningMessage() {
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-[29%] z-[45] w-[78%] max-w-[20rem] -translate-x-1/2 font-mono uppercase">
+      <div className="relative border border-[#a879ff]/45 bg-[#080711]/72 px-4 py-4 shadow-[0_0_34px_rgba(117,75,203,0.18)] backdrop-blur-[5px]">
+        <CaptureCornerBrackets compact />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8c6ff]/70 to-transparent" />
+        <div className="absolute inset-y-3 left-0 w-px bg-[#a879ff]/40" />
+        <div className="absolute inset-y-3 right-0 w-px bg-[#a879ff]/25" />
+        <div className="flex items-center justify-between gap-3 text-[7px] tracking-[0.22em] text-[#cbb8ff]/80">
+          <span>OBSERVATION ERROR</span>
+          <span className="tabular-nums text-[#7dff9b]/35">LOG_006</span>
+        </div>
+        <div className="mt-4 text-[16px] leading-[1.35] tracking-[0.24em] text-[#efeaff]/90 drop-shadow-[0_0_12px_rgba(168,121,255,0.3)]">
+          <div>SINGLE VIEWPOINT</div>
+          <div>INSUFFICIENT.</div>
+        </div>
+        <div className="mt-4 space-y-1 text-[8px] tracking-[0.18em] text-[#d8c6ff]/62">
+          <div>VIEWPOINT COUNT: INSUFFICIENT</div>
+          <div>PARTIAL ACQUISITION</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
@@ -333,6 +413,7 @@ export default function ReconCaptureStage() {
   const fieldRes = `${Math.round(70 + 10 * timeline.captureProgress)}%`;
   const phase = timeline.capturePhase;
   const phaseProgress = getPhaseProgress(phase, elapsed);
+  const warningActive = phase === "insufficient";
   const pressure = captureInstability.pressure;
   const focusHunt = phase === "aligning" ? (Math.sin(elapsed * 7) + 1) / 2 : 0;
   const resonancePressure =
@@ -366,7 +447,9 @@ export default function ReconCaptureStage() {
       ? 0.98
       : phase === "aligning"
         ? 0.96
-        : 0.94 - visualPressure * 0.06 + failurePressure * 0.04;
+        : warningActive
+          ? 0.72
+          : 0.94 - visualPressure * 0.06 + failurePressure * 0.04;
   const ghostOpacity =
     phase === "boot"
       ? 0.035
@@ -459,7 +542,7 @@ export default function ReconCaptureStage() {
         <div
           className="absolute inset-0 z-0"
           style={{
-            filter: `blur(${sceneBlur}px) saturate(${sceneSaturation}) contrast(${sceneContrast}) brightness(${sceneBrightness})`,
+            filter: `blur(${sceneBlur}px) saturate(${warningActive ? sceneSaturation * 0.68 : sceneSaturation}) contrast(${warningActive ? sceneContrast * 0.9 : sceneContrast}) brightness(${sceneBrightness}) hue-rotate(${warningActive ? -18 : 0}deg)`,
             transform: `translate3d(${sceneShiftX}px, ${sceneShiftY}px, 0) rotate(${sceneRotate}deg) scale(${sceneScaleX}, ${sceneScaleY})`,
             transformOrigin: "50% 48%",
           }}
@@ -579,22 +662,18 @@ export default function ReconCaptureStage() {
           </div>
         )}
 
-        {phase === "insufficient" && (
-          <div className="pointer-events-none absolute left-1/2 top-[30%] z-[35] w-[78%] max-w-[20rem] -translate-x-1/2 border border-[#a879ff]/30 bg-[#090812]/55 px-4 py-3 font-mono uppercase shadow-[0_0_28px_rgba(168,121,255,0.10)] backdrop-blur-[2px]">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#a879ff]/60 to-transparent" />
-            <div className="flex items-center justify-between gap-3 text-[7px] tracking-[0.22em] text-[#a879ff]/80">
-              <span>OBSERVATION ERROR</span>
-              <span className="tabular-nums text-[#2affef]/55">LOG_006</span>
-            </div>
-            <div className="mt-3 space-y-1.5 text-[9px] tracking-[0.2em] text-[#d9d0ff]/80">
-              <div>VIEWPOINT COUNT: INSUFFICIENT</div>
-              <div className="text-[#2affef]/55">PARTIAL ACQUISITION</div>
-            </div>
-          </div>
-        )}
-
         {/* Capture-only HUD overlay (z-30) */}
-        <div className="pointer-events-none absolute inset-0 z-30 select-none">
+        <div
+          className="pointer-events-none absolute inset-0 z-30 select-none"
+          style={
+            warningActive
+              ? {
+                  filter: "brightness(0.72) saturate(0.78) blur(0.25px) hue-rotate(-22deg)",
+                  opacity: 0.82,
+                }
+              : undefined
+          }
+        >
           <CaptureFrameLines />
 
           <div className="absolute inset-x-4 top-4 flex flex-col items-center gap-2">
@@ -630,7 +709,18 @@ export default function ReconCaptureStage() {
 
         {/* Timeline text overlay (z-30, above HUD meters) */}
         {(timeline.captureLabel || timeline.captureSubline) && (
-          <div className="absolute left-1/2 top-[68%] z-30 w-full flex flex-col items-center pointer-events-none" style={{ transform: 'translateX(-50%)' }}>
+          <div
+            className="absolute left-1/2 top-[68%] z-30 w-full flex flex-col items-center pointer-events-none"
+            style={{
+              transform: "translateX(-50%)",
+              ...(warningActive
+                ? {
+                    filter: "brightness(0.7) saturate(0.65) blur(0.35px) hue-rotate(-25deg)",
+                    opacity: 0.56,
+                  }
+                : {}),
+            }}
+          >
             {timeline.captureLabel && (
               <div className="relative whitespace-pre-line text-center font-mono text-[17px] tracking-[0.22em] text-[#2affef]/90 uppercase drop-shadow-[0_0_10px_rgba(42,255,239,0.34)] md:text-[20px]" style={{ letterSpacing: '0.18em' }}>
                 {(phase === "unstable" || phase === "fail") && (
@@ -652,6 +742,13 @@ export default function ReconCaptureStage() {
               </div>
             )}
           </div>
+        )}
+
+        {warningActive && (
+          <>
+            <PurpleWarningOverlay elapsed={elapsed} />
+            <PurpleWarningMessage />
+          </>
         )}
 
         {/* Blackout/glitch overlay (z-40) */}

@@ -300,10 +300,27 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         const capturePressure = captureEnabled ? Math.max(0, Math.min(1, capture.pressure)) : 0;
         const captureTime = capture?.elapsedSeconds ?? elapsedTime;
         const captureProgress = capture?.progress ?? 0;
+        const capturePhase = captureEnabled ? capture!.phase : '';
+
+        // Capture acquisition can never fully lock onto the artifact; each phase
+        // destabilizes it harder so the scan reads as unresolved rather than clean.
+        const capturePhaseInstability = !captureEnabled
+          ? 0
+          : capturePhase === 'aligning'
+            ? 0.7
+            : capturePhase === 'unstable'
+              ? 1.0
+              : capturePhase === 'fail'
+                ? 1.45
+                : capturePhase === 'insufficient'
+                  ? 0.6
+                  : 0.28; // boot
+
         const phaseJitter =
           capturePressure *
-          (Math.sin(captureTime * 8.7 + captureProgress * 3.1) * 0.006 +
-            Math.sin(captureTime * 13.0) * 0.003);
+          capturePhaseInstability *
+          (Math.sin(captureTime * 9.3 + captureProgress * 3.1) * 0.012 +
+            Math.sin(captureTime * 14.7) * 0.006);
 
         if (captureEnabled) {
           const scaleBreath =
@@ -320,14 +337,46 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         asset.rotation.x = Math.sin(elapsedTime * 0.08) * 1.75 + phaseJitter * 1.4;
         asset.rotation.z = Math.cos(elapsedTime * 0.06) * 1.45 - phaseJitter;
 
+        // Unstable acquisition: the artifact drifts and depth-slips when the
+        // capture rig cannot hold a lock (capture mode only; never on /recon).
+        if (captureEnabled) {
+          const inst = capturePhaseInstability;
+          asset.position.x =
+            (Math.sin(captureTime * 21.0) * 0.012 + Math.sin(captureTime * 6.7) * 0.022) * inst;
+          asset.position.y =
+            (Math.cos(captureTime * 18.3) * 0.01 + Math.sin(captureTime * 3.9) * 0.016) * inst;
+          asset.position.z = Math.sin(captureTime * 4.6) * 0.06 * inst;
+        }
+
         const pulseFreq = 0.85;
         const mainPulse = Math.sin(elapsedTime * pulseFreq);
         const tetraPulse = Math.sin(elapsedTime * 1.1);
 
         if (orbMaterial) {
           const baseIntensity = currentMode === 'SCAN' ? 2.2 : currentMode === 'IR' ? 1.15 : 0.8;
-          orbMaterial.emissiveIntensity =
-            baseIntensity + mainPulse * 0.25 + capturePressure * 0.22;
+          if (captureEnabled) {
+            // Suppress the orb so it stops reading as a hero beauty object, then
+            // layer failed-lock flicker + occasional phase-slip dropouts on top.
+            const emissiveSuppress =
+              capturePhase === 'aligning'
+                ? 0.5
+                : capturePhase === 'unstable'
+                  ? 0.34
+                  : capturePhase === 'fail'
+                    ? 0.22
+                    : capturePhase === 'insufficient'
+                      ? 0.46
+                      : 0.62; // boot
+            const lockFlicker =
+              1 + Math.sin(captureTime * 17.0 + captureProgress * 5.0) * 0.2 * capturePressure;
+            const phaseSlip = Math.sin(captureTime * 2.3) > 0.82 ? 0.5 : 1;
+            orbMaterial.emissiveIntensity = Math.max(
+              0.05,
+              (baseIntensity * emissiveSuppress + mainPulse * 0.08) * lockFlicker * phaseSlip
+            );
+          } else {
+            orbMaterial.emissiveIntensity = baseIntensity + mainPulse * 0.25;
+          }
         }
 
         if (orbMesh) {
@@ -361,12 +410,28 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
 
         const baseHaloOpacity = currentMode === 'SCAN' ? 0.06 : currentMode === 'IR' ? 0.22 : 0.15;
         const haloPulse = Math.sin(elapsedTime * 0.7) * 0.05;
-        const captureHaloPressure = capturePressure * (0.015 + Math.sin(captureTime * 4.3) * 0.006);
-        halo.scale.setScalar(1 + haloPulse + capturePressure * 0.025);
-        haloMaterial.opacity =
-          currentMode === 'SCAN'
-            ? baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.015 + captureHaloPressure * 0.5
-            : baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.04 + captureHaloPressure;
+        if (captureEnabled) {
+          // Pull the glow/halo down hard so the artifact loses its bloom dominance.
+          const haloSuppress =
+            capturePhase === 'fail'
+              ? 0.22
+              : capturePhase === 'unstable'
+                ? 0.38
+                : capturePhase === 'aligning'
+                  ? 0.55
+                  : capturePhase === 'insufficient'
+                    ? 0.5
+                    : 0.7; // boot
+          const haloFlicker = 1 + Math.sin(captureTime * 15.0) * 0.28 * capturePressure;
+          halo.scale.setScalar((1 + haloPulse * 0.5) * (1 - capturePressure * 0.12));
+          haloMaterial.opacity = Math.max(0, baseHaloOpacity * haloSuppress * haloFlicker);
+        } else {
+          halo.scale.setScalar(1 + haloPulse);
+          haloMaterial.opacity =
+            currentMode === 'SCAN'
+              ? baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.015
+              : baseHaloOpacity + Math.sin(elapsedTime * 0.7) * 0.04;
+        }
       };
     }
 

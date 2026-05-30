@@ -255,6 +255,46 @@ const clock = new THREE.Clock();
 
 // animation loop
 const updatePhase = (delta: number, time: number) => {
+  // Capture-only real-scene suppression: lower bloom pressure and dim the rig so
+  // the artifact reads as a hard-to-acquire anomaly instead of a beauty render.
+  // Gated on captureInstability presence, so /recon (undefined) is untouched.
+  const cap = captureInstabilityRef.current;
+  if (cap && bloomPass) {
+    if (cap.enabled) {
+      const p = Math.max(0, Math.min(1, cap.pressure));
+      let strength = 0.12;
+      let threshold = 0.5;
+      let radius = 0.14;
+      switch (cap.phase) {
+        case 'boot':
+          strength = 0.15; threshold = 0.5; radius = 0.12; break;
+        case 'aligning':
+          strength = 0.11; threshold = 0.56; radius = 0.16; break;
+        case 'unstable':
+          strength = 0.08; threshold = 0.62; radius = 0.2; break;
+        case 'fail':
+          // Most broken: overdriven, erratically flickering bloom.
+          strength = 0.05 + (Math.sin(cap.elapsedSeconds * 38) * 0.5 + 0.5) * 0.45;
+          threshold = 0.4; radius = 0.3; break;
+        case 'insufficient':
+          strength = 0.12; threshold = 0.55; radius = 0.14; break;
+      }
+      bloomPass.strength = strength;
+      bloomPass.threshold = threshold;
+      bloomPass.radius = radius;
+
+      if (ambientLightRef.current) ambientLightRef.current.intensity = 1.8 * (0.72 - p * 0.12);
+      if (directionalLightRef.current) directionalLightRef.current.intensity = 1.4 * (0.7 - p * 0.12);
+    } else {
+      // Capture present but in final diagnosis (black screens): restore COLOR baseline.
+      bloomPass.strength = 0.25;
+      bloomPass.threshold = 0.25;
+      bloomPass.radius = 0.1;
+      if (ambientLightRef.current) ambientLightRef.current.intensity = 1.8;
+      if (directionalLightRef.current) directionalLightRef.current.intensity = 1.4;
+    }
+  }
+
   // Traverse scene for update hooks
   scene.traverse((object) => {
     const update = (object.userData as { update?: (delta: number) => void }).update;
@@ -275,7 +315,9 @@ const updatePhase = (delta: number, time: number) => {
     const elevationHeight = Math.tan(elevationRad) * baseRadius;
     orbit.setHeight(scroll.height + elevationHeight);
 
-    orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
+    // Capture mode pushes the artifact farther back so it feels less front-present.
+    const captureRadiusBias = cap?.enabled ? 0.14 + Math.max(0, Math.min(1, cap.pressure)) * 0.2 : 0;
+    orbit.setRadius(baseRadius * (1 + scroll.radiusBias + captureRadiusBias));
 
     orbit.tick(delta);
 
