@@ -15,6 +15,7 @@ interface ReconShellProps {
   children: React.ReactNode;
   bypassInit?: boolean;
   captureInstability?: CaptureInstabilityState;
+  reverseCameraProgress?: boolean;
 }
 
 type CaptureInstabilityState = {
@@ -25,7 +26,7 @@ type CaptureInstabilityState = {
   pressure: number;
 };
 
-export function ReconShell({ children, bypassInit = false, captureInstability }: ReconShellProps) {
+export function ReconShell({ children, bypassInit = false, captureInstability, reverseCameraProgress = false }: ReconShellProps) {
   const { initPhase, bootStep, startBoot } = useReconInitSequence();
   const initPhaseRef = useRef(initPhase);
   initPhaseRef.current = initPhase;
@@ -124,6 +125,12 @@ export function ReconShell({ children, bypassInit = false, captureInstability }:
   const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"];
   const sectorName = SECTOR_NAMES[sectorIndex];
 
+  // Camera-only progress. When reversed, the artifact starts distant/foggy and
+  // is pulled closer/more revealed while scrolling. UI/telemetry/sector mapping
+  // intentionally keep the normal progress so OBSERVATION → ANALYSIS → GATEWAY
+  // is unaffected.
+  const cameraProgress = reverseCameraProgress ? 1 - smoothedProgress : smoothedProgress;
+
   const telemetry = useReconTelemetry({ sectorIndex, sectorName, progress });
 
   // If not bypassing INIT, show INIT overlay until ready
@@ -141,10 +148,10 @@ export function ReconShell({ children, bypassInit = false, captureInstability }:
         </div>
         <div className="absolute inset-0 z-10 pointer-events-none">
           <ThreeRuntimeAdapter
-            progress={smoothedProgress}
+            progress={cameraProgress}
             captureInstability={captureInstability}
             snapshot={{
-              scrollProgress: smoothedProgress,
+              scrollProgress: cameraProgress,
               sectorIndex,
               sectorName,
               isSnapped: true,
