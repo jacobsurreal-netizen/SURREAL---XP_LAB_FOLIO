@@ -56,6 +56,10 @@ const RECON_HUD_LIFE_STYLE = `
       text-shadow: 0 0 calc(3px + 5px * var(--recon-life, 0.15)) color-mix(in srgb, var(--hud-glow) 55%, transparent);
     }
   }
+  @keyframes recon-hud-signal-lite {
+    0%, 100% { opacity: 0.76; }
+    50% { opacity: calc(0.82 + 0.12 * var(--recon-life, 0.15)); }
+  }
   /* Centering is handled by Tailwind v4's standalone 'translate' property, so   */
   /* the reticle pulse animates only 'transform: scale' + opacity (no translate).*/
   @keyframes recon-hud-reticle {
@@ -94,13 +98,14 @@ const RECON_HUD_LIFE_STYLE = `
   .recon-hud-life { animation: recon-hud-breathe 7s ease-in-out infinite; }
   .recon-life-frame { animation: recon-hud-frame-breathe 9s ease-in-out infinite; }
   .recon-life-signal { animation: recon-hud-signal 4.5s ease-in-out infinite; }
+  .recon-life-signal-lite { animation: recon-hud-signal-lite 5.5s ease-in-out infinite; }
   .recon-life-reticle { animation: recon-hud-reticle 6s ease-in-out infinite; }
   .recon-life-jitter { animation: recon-hud-jitter 11s steps(1, end) infinite; }
   .recon-life-armed { animation: recon-hud-armed 2.8s ease-in-out infinite; }
   /* ANALYSIS: baseline signal shimmer (text-shadow) + allowed line flicker (opacity). */
   .recon-life-signal-flicker {
     animation:
-      recon-hud-signal 4.5s ease-in-out infinite,
+      recon-hud-signal-lite 5.5s ease-in-out infinite,
       recon-hud-flicker 8s steps(1, end) infinite;
   }
 
@@ -129,6 +134,7 @@ const RECON_HUD_LIFE_STYLE = `
     .recon-hud-life,
     .recon-life-frame,
     .recon-life-signal,
+    .recon-life-signal-lite,
     .recon-life-reticle,
     .recon-life-jitter,
     .recon-life-signal-flicker,
@@ -140,6 +146,21 @@ const RECON_HUD_LIFE_STYLE = `
     .recon-parallax-core {
       transform: none !important;
       transition: none !important;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .recon-life-signal {
+      animation: recon-hud-signal-lite 6.5s ease-in-out infinite;
+      text-shadow: none !important;
+    }
+    .recon-life-signal-lite,
+    .recon-life-signal-flicker {
+      animation: recon-hud-signal-lite 7s ease-in-out infinite;
+      text-shadow: none !important;
+    }
+    .recon-life-jitter {
+      animation: none;
     }
   }
 `
@@ -422,7 +443,7 @@ function StaticMeterShell({
         }`}
       >
         <span className="max-w-[9rem] truncate">{label}</span>
-        <span className="recon-life-signal tabular-nums opacity-80 text-[color:var(--hud-accent)]">{value || "—"}</span>
+        <span className="recon-life-signal-lite tabular-nums opacity-80 text-[color:var(--hud-accent)]">{value || "—"}</span>
       </div>
       <div
         className={`relative w-full overflow-hidden bg-[color:var(--hud-accent-dim)] ${
@@ -526,7 +547,7 @@ function LeftScannerPanel({
               className="flex items-baseline justify-between gap-2 font-mono text-[7px] tracking-[0.15em] text-[color:var(--hud-text-dim)] md:text-[8px]"
             >
               <span className="shrink-0">{item.label}</span>
-              <span className="recon-life-signal shrink-0 whitespace-nowrap tabular-nums text-[color:var(--hud-accent)] opacity-80">
+              <span className="recon-life-signal-lite shrink-0 whitespace-nowrap tabular-nums text-[color:var(--hud-accent)] opacity-80">
                 {item.value}
               </span>
             </div>
@@ -543,7 +564,7 @@ function RightDiagnosticPanel({ sectorIndex }: { sectorIndex: number }) {
   const rows = RIGHT_PANEL_DATA[Math.min(sectorIndex, 2)]
   // ANALYSIS sector: meter/log values get a small allowed line flicker on top
   // of the baseline signal shimmer to read as increased acquisition activity.
-  const valueLifeClass = sectorIndex === 1 ? "recon-life-signal-flicker" : "recon-life-signal"
+  const valueLifeClass = sectorIndex === 1 ? "recon-life-signal-flicker" : "recon-life-signal-lite"
   return (
     <div className="recon-parallax-panel absolute right-3 top-1/2 w-40 -translate-y-1/2 opacity-90 lg:right-6 lg:w-48">
       <div className="relative p-2.5 lg:p-3">

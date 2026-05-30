@@ -42,6 +42,31 @@ export function ReconOpticalOverlay() {
           transition: transform 240ms ease-out;
         }
 
+        @media (max-width: 767px) {
+          .recon-optical-sweep {
+            display: none;
+            animation: none;
+          }
+
+          .recon-optical-noise {
+            display: none;
+          }
+
+          .recon-optical-scanlines {
+            opacity: 0.025 !important;
+          }
+
+          .recon-optical-breathe {
+            animation: none;
+            opacity: 0.045 !important;
+          }
+
+          .recon-optical-parallax {
+            transform: none;
+            transition: none;
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .recon-optical-sweep {
             animation: none;
@@ -77,7 +102,7 @@ export function ReconOpticalOverlay() {
 
         {/* Faint optical noise — CSS gradients only */}
         <div
-          className="absolute inset-0 mix-blend-soft-light"
+          className="recon-optical-noise absolute inset-0 mix-blend-soft-light"
           style={{
             opacity: 0.05,
             backgroundImage: `
@@ -111,7 +136,7 @@ export function ReconOpticalOverlay() {
 
         {/* Scanline texture */}
         <div
-          className="absolute inset-0"
+          className="recon-optical-scanlines absolute inset-0"
           style={{
             opacity: 0.042,
             backgroundImage:
