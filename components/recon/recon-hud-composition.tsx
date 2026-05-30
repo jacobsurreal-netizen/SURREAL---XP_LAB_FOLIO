@@ -881,24 +881,20 @@ export function ReconHudComposition({
         aria-hidden="true"
       >
         <div className="recon-hud-life absolute inset-0">
-          {!isMobile && (
-            <DesktopComposition
-              sectorIndex={safeIndex}
-              sectorName={displaySectorName}
-              progress={displayProgress / 100}
-              onRequestArLink={onRequestArLink}
-              suppressGatewayCommand={suppressGatewayCommand}
-              telemetry={telemetry}
-            />
-          )}
-          {isMobile && (
-            <MobileComposition
-              sectorName={displaySectorName}
-              progress={displayProgress / 100}
-              sectorIndex={safeIndex}
-              telemetry={telemetry}
-            />
-          )}
+          <DesktopComposition
+            sectorIndex={safeIndex}
+            sectorName={displaySectorName}
+            progress={displayProgress / 100}
+            onRequestArLink={onRequestArLink}
+            suppressGatewayCommand={suppressGatewayCommand}
+            telemetry={telemetry}
+          />
+          <MobileComposition
+            sectorName={displaySectorName}
+            progress={displayProgress / 100}
+            sectorIndex={safeIndex}
+            telemetry={telemetry}
+          />
         </div>
       </div>
     </>

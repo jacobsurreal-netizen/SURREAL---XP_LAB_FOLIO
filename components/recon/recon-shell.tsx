@@ -46,11 +46,22 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
     setMounted(true);
     if (typeof window !== "undefined") {
       const checkMobile = () => {
-        setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+        setIsMobile(
+          window.matchMedia("(max-width: 767px)").matches ||
+            window.matchMedia("(pointer: coarse)").matches,
+        );
       };
       checkMobile();
+      const widthQuery = window.matchMedia("(max-width: 767px)");
+      const pointerQuery = window.matchMedia("(pointer: coarse)");
+      widthQuery.addEventListener("change", checkMobile);
+      pointerQuery.addEventListener("change", checkMobile);
       window.addEventListener("resize", checkMobile);
-      return () => window.removeEventListener("resize", checkMobile);
+      return () => {
+        widthQuery.removeEventListener("change", checkMobile);
+        pointerQuery.removeEventListener("change", checkMobile);
+        window.removeEventListener("resize", checkMobile);
+      };
     }
   }, []);
 

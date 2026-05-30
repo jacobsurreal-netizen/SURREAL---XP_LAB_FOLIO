@@ -23,11 +23,20 @@ export type ReconTelemetry = {
   pointerActive: boolean
 }
 
+function getMobileMatch() {
+  if (typeof window === "undefined") return false
+  return (
+    window.matchMedia("(max-width: 767px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  )
+}
+
 export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
   const [viewport, setViewport] = useState({
-    width: typeof window !== "undefined" ? window.innerWidth : 0,
-    height: typeof window !== "undefined" ? window.innerHeight : 0,
-    dpr: typeof window !== "undefined" ? window.devicePixelRatio : 1,
+    width: 0,
+    height: 0,
+    dpr: 1,
+    isMobile: false,
   })
   const [sessionTime, setSessionTime] = useState(0)
   const [pointer, setPointer] = useState<{
@@ -51,11 +60,21 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
         width: window.innerWidth,
         height: window.innerHeight,
         dpr: window.devicePixelRatio,
+        isMobile: getMobileMatch(),
       })
     }
     if (typeof window !== "undefined") {
+      const widthQuery = window.matchMedia("(max-width: 767px)")
+      const pointerQuery = window.matchMedia("(pointer: coarse)")
       window.addEventListener("resize", handleResize)
+      widthQuery.addEventListener("change", handleResize)
+      pointerQuery.addEventListener("change", handleResize)
       handleResize()
+      return () => {
+        window.removeEventListener("resize", handleResize)
+        widthQuery.removeEventListener("change", handleResize)
+        pointerQuery.removeEventListener("change", handleResize)
+      }
     }
     return () => {
       if (typeof window !== "undefined") {
@@ -104,7 +123,7 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
         !inside ||
         event.pointerType !== "mouse" ||
         window.matchMedia("(pointer: coarse)").matches ||
-        w < 768
+        window.matchMedia("(max-width: 767px)").matches
       ) {
         setPointerInactive()
         return
@@ -151,7 +170,6 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     }
   }, [])
 
-  const isMobile = viewport.width < 768
   const pointerNormalizedX =
     pointer.x != null && viewport.width > 0 ? pointer.x / viewport.width : null
   const pointerNormalizedY =
@@ -165,7 +183,7 @@ export function useReconTelemetry(input: ReconTelemetryInput): ReconTelemetry {
     viewportWidth: viewport.width,
     viewportHeight: viewport.height,
     devicePixelRatio: viewport.dpr,
-    isMobile,
+    isMobile: viewport.isMobile,
     sessionTimeSeconds: sessionTime,
     pointerX: pointer.x,
     pointerY: pointer.y,

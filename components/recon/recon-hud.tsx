@@ -404,8 +404,8 @@ export function ReconHUD({ sectorIndex, isMobile, sectorName, progress = 0, tele
         Mobile sector 2: direct AR link replaces modal (no pointer-events issue on mobile).
         The composition's bottom strip carries the status. No card rendered.
       */}
-      {isMobile && safeSectorIndex === 2 && !isDirectProtocolActive && (
-        <div className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2">
+      {safeSectorIndex === 2 && !isDirectProtocolActive && (
+        <div className="pointer-events-auto absolute bottom-[16vh] left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2 md:hidden">
           <a
             href={RECON_AR_URL}
             className="recon-life-armed group relative min-w-[min(88vw,16rem)] border border-[color:var(--hud-accent)] bg-transparent px-5 py-2.5 text-center font-mono transition duration-200 hover:bg-[color:var(--hud-accent-dim)]"
