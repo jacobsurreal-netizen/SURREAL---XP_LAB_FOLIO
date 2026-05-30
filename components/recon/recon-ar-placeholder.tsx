@@ -74,15 +74,22 @@ export function ReconArPlaceholder() {
         <div className="relative mt-2 w-full border border-[color:var(--hud-accent-dim)] bg-[color:var(--hud-accent-dim)] px-4 py-6">
           <HudCornerBrackets compact />
           <p className="font-mono text-[10px] leading-relaxed tracking-[0.22em] text-[color:var(--hud-text-dim)]">
-            AR TRACKING OFFLINE
+            LIVE FIELD TOOL ONLINE
             <br />
-            MINDAR NOT INITIALIZED
+            EXTERNAL AR RUNTIME
           </p>
         </div>
 
         <Link
+          href="https://surreal-exp-lab-ar.vercel.app/"
+          className="pointer-events-auto relative mt-2 w-full border border-[color:var(--hud-accent)] bg-[color:var(--hud-accent-dim)] px-5 py-3 font-mono text-[length:clamp(0.62rem,2.8vw,0.78rem)] font-semibold tracking-[0.18em] text-[color:var(--hud-accent)] transition hover:bg-[color:var(--hud-accent)] hover:text-black"
+        >
+          [ OPEN LIVE AR SCANNER ]
+        </Link>
+
+        <Link
           href="/recon"
-          className="pointer-events-auto relative mt-2 border border-[color:var(--hud-accent-dim)] px-5 py-2.5 font-mono text-[length:clamp(0.6rem,2.5vw,0.7rem)] tracking-[0.18em] text-[color:var(--hud-text)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
+          className="pointer-events-auto relative border border-[color:var(--hud-accent-dim)] px-5 py-2.5 font-mono text-[length:clamp(0.6rem,2.5vw,0.7rem)] tracking-[0.18em] text-[color:var(--hud-text)] transition hover:bg-[color:var(--hud-accent-dim)] hover:text-[color:var(--hud-accent)]"
         >
           [ RETURN TO OBSERVATION DECK ]
         </Link>
