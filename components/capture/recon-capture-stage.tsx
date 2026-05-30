@@ -167,6 +167,21 @@ function isFinalDiagnosisPhase(phase: string) {
   );
 }
 
+// Phase-driven CRT noise intensity (0 = silent, 1 = peak degradation)
+function getCRTNoiseIntensity(phase: string, elapsedSeconds: number): number {
+  const p = getPhaseProgress(phase, elapsedSeconds);
+  if (phase === "boot") return 0.15;
+  if (phase === "aligning") return 0.15 + p * 0.15;          // 0.15 → 0.30
+  if (phase === "unstable") return 0.30 + p * 0.30;          // 0.30 → 0.60
+  if (phase === "fail") return 0.90;
+  if (phase === "insufficient") return 0.55 - p * 0.10;      // 0.55 → 0.45
+  if (phase === "signal_loss") return 0.85;
+  if (phase === "diagnosis_pause") return Math.max(0, 0.08 - p * 0.07);
+  if (phase === "machine_insufficient") return 0.05;
+  if (phase === "human_required") return 0.04;
+  return 0.00;
+}
+
 const DIAGNOSIS_GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\[]{}<>#_";
 
 function getResolvedDiagnosisText(
@@ -396,6 +411,143 @@ function PurpleWarningMessage() {
 }
 
 
+// CRT noise / signal interference overlay — five deterministic layers.
+// Sits at z-23: above optical instability (z-20), below HUD (z-30).
+function CRTInterferenceOverlay({
+  phase,
+  elapsed,
+  noiseIntensity,
+}: {
+  phase: string;
+  elapsed: number;
+  noiseIntensity: number;
+}) {
+  if (noiseIntensity < 0.01) return null;
+
+  const i = noiseIntensity;
+  const isFail = phase === "fail";
+  const isUnstable = phase === "unstable";
+  const isSignalLoss = phase === "signal_loss";
+  const needsTearing = isFail || isUnstable || isSignalLoss;
+
+  // Slow-drift interference band positions — deterministic sine offsets
+  const band1Y = 19 + Math.sin(elapsed * 2.3) * 11;
+  const band2Y = 53 + Math.cos(elapsed * 1.8) * 9;
+  const band3Y = 77 + Math.sin(elapsed * 3.4) * 6;
+
+  // Fast signal-tearing scan line: speed scales with phase pressure
+  const tearSpeed = isFail ? 38 : isSignalLoss ? 28 : 20;
+  const tearY = (elapsed * tearSpeed) % 100;
+
+  // Rolling broad acquisition sweep — one pass per ~9 s
+  const sweepY = (elapsed * 9) % 110 - 10;
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ zIndex: 23 }}
+      aria-hidden="true"
+    >
+      {/* Layer 1: Fine CRT scanlines (3 px period, darker raster) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "repeating-linear-gradient(180deg, transparent 0 2px, rgba(0,0,0,0.20) 2px 3px)",
+          opacity: i * 0.68,
+          mixBlendMode: "multiply",
+        }}
+      />
+
+      {/* Layer 2: Grain / noise cross-hatch (two diagonal gradients) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: [
+            `repeating-linear-gradient(${47 + Math.sin(elapsed * 0.6) * 3}deg, transparent 0 2px, rgba(42,255,239,0.04) 2px 3px, transparent 3px 8px)`,
+            `repeating-linear-gradient(${-52 + Math.cos(elapsed * 0.5) * 2}deg, transparent 0 2px, rgba(0,0,0,0.05) 2px 3px, transparent 3px 10px)`,
+          ].join(", "),
+          opacity: i * 0.42,
+          mixBlendMode: "overlay",
+        }}
+      />
+
+      {/* Layer 3a: Primary horizontal interference band */}
+      <div
+        className="absolute inset-x-0"
+        style={{
+          top: `${band1Y}%`,
+          height: "2.5vh",
+          background:
+            "linear-gradient(180deg, transparent, rgba(42,255,239,0.20) 50%, transparent)",
+          opacity: i * 0.72,
+          mixBlendMode: "screen",
+          transform: `translateX(${Math.sin(elapsed * 10.8) * i * 8}px)`,
+          filter: "blur(0.5px)",
+        }}
+      />
+
+      {/* Layer 3b: Secondary horizontal interference band */}
+      <div
+        className="absolute inset-x-0"
+        style={{
+          top: `${band2Y}%`,
+          height: "1.5vh",
+          background:
+            "linear-gradient(180deg, transparent, rgba(42,255,239,0.14) 50%, transparent)",
+          opacity: i * 0.56,
+          mixBlendMode: "screen",
+          transform: `translateX(${Math.cos(elapsed * 8.3) * i * -6}px)`,
+        }}
+      />
+
+      {/* Layer 3c: Tertiary band — high-pressure phases only */}
+      {needsTearing && (
+        <div
+          className="absolute inset-x-0"
+          style={{
+            top: `${band3Y}%`,
+            height: "1vh",
+            background:
+              "linear-gradient(180deg, transparent, rgba(255,255,255,0.09) 50%, transparent)",
+            opacity: i * 0.50,
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
+
+      {/* Layer 4: Signal tearing — 1 px bright scan line, phase-speed driven */}
+      {needsTearing && (
+        <div
+          className="absolute inset-x-0"
+          style={{
+            top: `${tearY}%`,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(202,255,239,0.85) 15%, rgba(42,255,239,0.65) 50%, rgba(202,255,239,0.85) 85%, transparent)",
+            opacity: i * 0.88,
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
+
+      {/* Layer 5: Rolling broad acquisition sweep */}
+      <div
+        className="absolute inset-x-[-8%]"
+        style={{
+          top: `${sweepY}%`,
+          height: "7vh",
+          background:
+            "linear-gradient(180deg, transparent, rgba(42,255,239,0.055), rgba(42,255,239,0.03), transparent)",
+          opacity: i * 0.55,
+          mixBlendMode: "screen",
+          filter: "blur(2.5px)",
+        }}
+      />
+    </div>
+  );
+}
+
 export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -442,10 +594,16 @@ export default function ReconCaptureStage() {
     const resolvingDiagnosis = isMachineDiagnosis || isHumanDiagnosis;
     const diagnosisSettled = diagnosisProgress > (isMachineDiagnosis ? 0.82 : 0.68);
 
+    const diagCRTIntensity = getCRTNoiseIntensity(timeline.capturePhase, elapsed);
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#040b0a] select-none">
+        <CRTInterferenceOverlay
+          phase={timeline.capturePhase}
+          elapsed={elapsed}
+          noiseIntensity={diagCRTIntensity}
+        />
         {diagnosisText && (
-          <div className="relative px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]">
+          <div className="relative px-6 text-center font-mono text-[13px] tracking-[0.24em] text-[#2affef]/75 uppercase md:text-[15px]" style={{ zIndex: 30 }}>
             {resolvingDiagnosis && !diagnosisSettled && (
               <>
                 <span
@@ -584,6 +742,7 @@ export default function ReconCaptureStage() {
     phase === "unstable" ? 2.6 + resonancePressure * 2.1 : phase === "fail" ? 6.6 : 0.7 + visualPressure * 1.8;
   const ghostBandBlur =
     phase === "unstable" ? 1.1 + resonancePressure * 1.8 : phase === "fail" ? 5.4 : 0.55 + visualPressure * 1.7;
+  const crtNoiseIntensity = getCRTNoiseIntensity(phase, elapsed);
 
   // 9:16 mobile frame sizing
   // max height = 100vh, max width = 9/16 * 100vh
@@ -718,6 +877,9 @@ export default function ReconCaptureStage() {
             }}
           />
         </div>
+
+        {/* CRT noise + signal interference layers (z-23) */}
+        <CRTInterferenceOverlay phase={phase} elapsed={elapsed} noiseIntensity={crtNoiseIntensity} />
 
         {(phase === "unstable" || phase === "fail") && (
           <div className="pointer-events-none absolute left-1/2 top-[24%] z-30 -translate-x-1/2 font-mono text-[8px] tracking-[0.2em] text-[#2affef] opacity-45">
