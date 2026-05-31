@@ -35,6 +35,7 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
 
   const [progress, setProgress] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [forceCompactLayout, setForceCompactLayout] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const smoothedProgress = useSmoothedProgress(progress, {
@@ -45,6 +46,15 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
+      // Read URL search params client-side to avoid hydration mismatch. If
+      // `entry=ar` is present, force compact/mobile layout regardless of
+      // viewport detection.
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("entry") === "ar") setForceCompactLayout(true);
+      } catch (e) {
+        // ignore
+      }
       const checkMobile = () => {
         setIsMobile(
           window.matchMedia("(max-width: 767px)").matches ||
@@ -147,6 +157,9 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
   // If not bypassing INIT, show INIT overlay until ready
   const showInit = !bypassInit && initPhase !== "ready";
 
+  // Force compact layout when entry=ar; otherwise use detected mobile.
+  const effectiveIsMobile = forceCompactLayout || isMobile;
+
   return (
     <>
       <div
@@ -174,7 +187,7 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
         {!showInit && (
           <ReconHUD
             sectorIndex={sectorIndex}
-            isMobile={isMobile}
+            isMobile={effectiveIsMobile}
             sectorName={sectorName}
             progress={progress}
             telemetry={telemetry}
