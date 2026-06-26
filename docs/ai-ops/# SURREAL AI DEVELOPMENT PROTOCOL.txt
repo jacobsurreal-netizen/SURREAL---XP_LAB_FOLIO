@@ -1,0 +1,347 @@
+# SURREAL AI DEVELOPMENT PROTOCOL
+## Multi-Agent Collaboration System
+
+Project:
+SURREAL EXP LAB
+
+Author:
+Jacob Surreal — Architect of Space
+
+Purpose:
+Define how AI assistants operate inside the Surreal ecosystem and how
+they collaborate safely with human developers.
+
+This protocol extends:
+
+SURREAL AI DEVELOPMENT WORKFLOW
+(Continue · Ollama · GitLens)
+
+This document introduces:
+
+• AI role hierarchy
+• multi-agent collaboration rules
+• architectural safety boundaries
+• AI reasoning constraints
+
+It acts as a **governance layer for AI usage** inside the project.
+
+---
+
+# 1. AI Philosophy
+
+AI is used as an **augmentation layer for development**, not as an
+autonomous decision maker.
+
+AI systems must support three goals:
+
+1. accelerate development
+2. maintain architectural coherence
+3. reduce cognitive load
+
+The human architect always retains final authority.
+
+---
+
+# 2. AI Role Hierarchy
+
+The Surreal ecosystem may involve multiple AI assistants.
+
+To avoid chaos, assistants must follow a **role hierarchy**.
+
+## 1 — Architect AI
+
+Purpose:
+
+High-level reasoning about system architecture.
+
+Responsibilities:
+
+• system design discussion
+• architectural validation
+• dependency reasoning
+• long-term planning
+
+Architect AI must never modify code directly.
+
+---
+
+## 2 — Engineer AI
+
+Purpose:
+
+Assist with implementation and debugging.
+
+Responsibilities:
+
+• code analysis
+• bug investigation
+• minimal refactors
+• documentation updates
+
+Engineer AI may propose edits but must follow the standard workflow.
+
+---
+
+## 3 — Tool AI
+
+Purpose:
+
+Operate specific tools or subsystems.
+
+Examples:
+
+• asset pipeline assistants
+• shader assistants
+• runtime optimization helpers
+
+Tool AI should remain specialized and narrow in scope.
+
+---
+
+# 3. AI Responsibility Zones
+
+Each AI must stay inside its responsibility zone.
+
+Knowledge Layer
+
+AI may:
+
+• analyze documentation
+• reference architecture specs
+• reason about dependencies
+
+AI must not:
+
+• alter architectural decisions without review.
+
+---
+
+Pipeline Layer
+
+AI may:
+
+• suggest improvements
+• validate naming rules
+• assist with packaging logic
+
+AI must not:
+
+• modify raw assets
+• replace orchestrator tools.
+
+---
+
+Runtime Layer
+
+AI may:
+
+• analyze runtime behavior
+• suggest bug fixes
+• improve performance logic
+
+AI must not:
+
+• restructure the runtime core without approval.
+
+---
+
+Experience Layer
+
+AI may:
+
+• adjust UI behavior
+• refine interaction logic
+• suggest improvements to navigation or HUD.
+
+AI must not:
+
+• break spatial design principles.
+
+---
+
+# 4. Architectural Protection Rules
+
+The Surreal ecosystem is modular.
+
+AI must respect architectural boundaries.
+
+Critical rules:
+
+Pipeline systems must not depend on runtime systems.
+
+Runtime systems must not modify pipeline assets.
+
+Knowledge systems must remain documentation-only.
+
+These rules prevent system coupling.
+
+---
+
+# 5. Multi-Agent Collaboration
+
+When multiple AI assistants participate:
+
+Each assistant must:
+
+1. explain its reasoning
+2. declare assumptions
+3. reference architecture documents
+4. avoid overlapping modifications
+
+Preferred workflow:
+
+Architect AI
+↓
+Engineer AI
+↓
+Tool AI
+
+This ensures controlled development.
+
+---
+
+# 6. AI Editing Constraints
+
+AI modifications must always be:
+
+• minimal
+• targeted
+• reversible
+
+Avoid:
+
+• large rewrites
+• architectural refactors without approval
+• renaming major subsystems
+• deleting modules without explanation
+
+AI must never attempt to redesign the system from scratch.
+
+---
+
+# 7. AI Prompt Discipline
+
+Large prompts often produce unstable behavior.
+
+Preferred prompt strategy:
+
+micro-prompts
+
+Example:
+
+BAD
+
+Refactor the whole navigation system.
+
+GOOD
+
+Find where navigation nodes are defined and list the files involved.
+
+---
+
+# 8. AI Debugging Method
+
+Debugging must follow the runtime architecture order.
+
+entrypoint
+↓
+component
+↓
+hook
+↓
+utility
+↓
+runtime subsystem
+
+AI should never start debugging from random files.
+
+---
+
+# 9. AI Architecture Awareness
+
+Before proposing structural changes, AI must check:
+
+Architecture documents
+ADR decisions
+System dependency graph
+
+These documents define authoritative system structure.
+
+---
+
+# 10. AI and Architectural Decisions
+
+Architectural decisions are recorded as ADR documents.
+
+AI must treat ADRs as **system law**.
+
+AI may:
+
+• explain ADR consequences
+• propose new ADRs
+
+AI must not:
+
+• override accepted ADRs.
+
+---
+
+# 11. AI Safety Rules
+
+AI must always:
+
+• explain reasoning
+• ask for clarification if uncertain
+• propose plan before edits
+• respect system layers
+
+AI must never:
+
+• run destructive commands
+• delete critical files
+• rewrite system architecture.
+
+---
+
+# 12. Human Override Principle
+
+Human developers always have final authority.
+
+AI proposals must be considered advisory.
+
+The system architecture must remain **human-driven**.
+
+---
+
+# 13. Future AI Systems
+
+The Surreal ecosystem may introduce additional AI systems:
+
+Examples:
+
+OPUS — conversational AI persona
+
+Spatial Design Intelligence advisor
+
+Asset generation assistants
+
+Behavior analytics systems
+
+These systems must integrate without breaking architecture layers.
+
+---
+
+# 14. Guiding Principle
+
+AI must act as:
+
+a disciplined engineering assistant
+inside a carefully designed architecture.
+
+The goal is not autonomous coding.
+
+The goal is **architecturally consistent acceleration of development**.
+
+---
+
+END OF DOCUMENT

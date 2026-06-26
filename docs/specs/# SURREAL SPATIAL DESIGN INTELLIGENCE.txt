@@ -1,0 +1,354 @@
+# SURREAL SPATIAL DESIGN INTELLIGENCE
+
+## SDI Lite — Runtime Performance Governor Checklist (v0.1)
+
+Project: **SURREAL_XP_LAB_FOLIO**
+Author: **Jacob Surreal — Architect of Space**
+
+Purpose:
+Lightweight runtime system for stabilizing performance in spatial WebGL scenes during the **Spline → Custom Runtime transition phase**.
+
+---
+
+# 1. Goal of SDI Lite
+
+SDI Lite is a minimal runtime performance controller designed to:
+
+* maintain stable cinematic FPS
+* prevent GPU overload
+* control scene complexity
+* prepare architecture for future AI optimization
+
+Important:
+
+```
+SDI Lite does NOT require AI.
+It uses deterministic rules.
+```
+
+AI may be added later as an **advisor layer**.
+
+---
+
+# 2. System Architecture
+
+```
+SpatialRuntimeController
+│
+├─ Metrics Monitor
+├─ Quality Levels
+├─ Policy Rules
+└─ Feature Switches
+```
+
+This controller runs alongside the scene runtime.
+
+---
+
+# 3. Metrics Monitor
+
+Measure performance every:
+
+```
+0.5–1 second
+```
+
+Track:
+
+* FPS
+* frameTime
+* devicePixelRatio
+* viewport size
+* visible object count
+* particle count
+* active visual effects
+
+Example metrics object:
+
+```
+{
+ "fps": 54,
+ "frameTime": 18.2,
+ "dpr": 2,
+ "particles": 320,
+ "objectsVisible": 25
+}
+```
+
+---
+
+# 4. Quality Levels
+
+Define fixed rendering budgets.
+
+```
+Q0_showcase
+Q1_standard
+Q2_balanced
+Q3_performance
+Q4_survival
+```
+
+Example mapping:
+
+```
+FPS >= 58 → Q0
+FPS 50–58 → Q1
+FPS 40–50 → Q2
+FPS 30–40 → Q3
+FPS < 30 → Q4
+```
+
+Add **hysteresis delay (2–3s)** to prevent oscillation.
+
+---
+
+# 5. Feature Switches
+
+The governor may modify these parameters:
+
+```
+particleDensity
+particleSpawnRate
+volumetricFog
+bloom/postFX
+dynamicLights
+LOD threshold
+animation update rate
+HUD effects
+```
+
+Example:
+
+```
+particleDensity = HIGH / MEDIUM / LOW
+fog = ON / MEDIUM / OFF
+postFX = ON / OFF
+```
+
+---
+
+# 6. High Impact Performance Controls
+
+Three strongest runtime knobs:
+
+1️⃣ Render resolution (DPR scaling)
+2️⃣ Particle density
+3️⃣ Post-processing effects
+
+Recommended reduction order:
+
+```
+1 reduce particles
+2 reduce DPR
+3 disable heavy postFX
+```
+
+---
+
+# 7. DPR Control
+
+Dynamic resolution scaling is extremely effective.
+
+Example:
+
+```
+DPR 2.0 → 1.5
+DPR 1.5 → 1.25
+DPR 1.0 → keep
+```
+
+Never drop below **1** unless critical.
+
+---
+
+# 8. Particle Budget
+
+Recommended ranges for spatial scenes:
+
+Showcase
+
+```
+400–600 particles
+```
+
+Balanced
+
+```
+200–350 particles
+```
+
+Performance
+
+```
+80–150 particles
+```
+
+Survival
+
+```
+<50 particles
+```
+
+Particles are visually strong but GPU expensive.
+
+---
+
+# 9. Performance Logging
+
+Every quality change should be logged.
+
+Example:
+
+```
+[12:41:02]
+fps: 42
+level: Q2_balanced
+
+actions:
+- particleDensity 1.0 → 0.6
+- fog high → medium
+```
+
+These logs later enable **AI performance analysis**.
+
+---
+
+# 10. Debug Overlay (Optional)
+
+Display during development:
+
+```
+currentQualityLevel
+fps
+frameTime
+particleCount
+activeEffects
+```
+
+Useful for tuning thresholds.
+
+---
+
+# 11. Spline Phase Constraints
+
+During **Spline runtime phase**:
+
+Limitations:
+
+* limited control of render internals
+* restricted shader control
+* limited drawcall visibility
+
+Strategy:
+
+* control feature groups
+* control DPR
+* control particle counts
+* keep logic external
+
+Controller should remain **outside Spline runtime**.
+
+---
+
+# 12. Preparation for C Phase (Three.js)
+
+Design runtime API now.
+
+Example interface:
+
+```
+setQuality(level)
+setFeature(name,value)
+getMetrics()
+setSceneState(state)
+```
+
+Later runtime adapters:
+
+```
+SplineRuntimeAdapter
+ThreeRuntimeAdapter
+```
+
+This allows painless migration.
+
+---
+
+# 13. Development Checklist
+
+Initial implementation tasks:
+
+```
+✓ FPS monitor
+✓ Quality Levels
+✓ Feature Switches
+✓ DPR scaling
+✓ Particle density control
+✓ Performance logging
+✓ Optional debug overlay
+```
+
+---
+
+# 14. Future Extensions (v2+)
+
+AI Policy Advisor.
+
+AI may analyze logs and propose:
+
+* device specific thresholds
+* optimized particle budgets
+* better render tiers
+
+AI acts as **advisor**, not runtime controller.
+
+---
+
+# 15. Design Philosophy
+
+SDI must remain:
+
+```
+deterministic
+debuggable
+modular
+predictable
+```
+
+It should be:
+
+> the silent guardian of cinematic performance.
+
+---
+
+END OF DOCUMENT
+
+---
+
+## Další krok (velmi důležitý)
+
+Teď uděláme přesně to, co jsi chtěl:
+
+> **nové vlákno = planner + route security system**
+
+To bude vlastně něco jako:
+
+**Surreal Production Navigator**
+
+který bude:
+
+* hlídat pořadí kroků
+* upozorňovat na závislosti
+* zabrání tomu, abys něco postavil ve špatném pořadí
+* bude fungovat jako **architektonická mapa projektu**
+
+V dalším kroku ti připravím **prompt pro založení toho vlákna**, který z něj udělá něco mezi:
+
+```
+project planner
+system architect
+pipeline guardian
+```
+
+To ti brutálně sníží mentální zátěž při vývoji.

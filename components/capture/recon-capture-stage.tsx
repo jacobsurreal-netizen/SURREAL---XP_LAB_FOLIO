@@ -752,6 +752,11 @@ export default function ReconCaptureStage() {
   const [elapsed, setElapsed] = useState(0);
   const rafRef = useRef<number | null>(null);
 
+  // Ensure scroll-derived camera progress cannot leak in from /recon navigation.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Timeline driver: 0–15s, deterministic, no random
   useEffect(() => {
     let start = performance.now();

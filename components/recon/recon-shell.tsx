@@ -75,6 +75,13 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
     }
   }, []);
 
+  // Capture route: clear any scroll offset inherited from /recon navigation.
+  useEffect(() => {
+    if (!bypassInit) return;
+    setProgress(0);
+    window.scrollTo(0, 0);
+  }, [bypassInit]);
+
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
@@ -146,11 +153,14 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
   const SECTOR_NAMES = ["OBSERVATION", "ANALYSIS", "GATEWAY"];
   const sectorName = SECTOR_NAMES[sectorIndex];
 
-  // Camera-only progress. When reversed, the artifact starts distant/foggy and
-  // is pulled closer/more revealed while scrolling. UI/telemetry/sector mapping
-  // intentionally keep the normal progress so OBSERVATION → ANALYSIS → GATEWAY
-  // is unaffected.
-  const cameraProgress = reverseCameraProgress ? 1 - smoothedProgress : smoothedProgress;
+  // Camera-only progress. Capture pins to 0 (HERO / observation framing) so a
+  // leftover scroll position from /recon cannot orbit the rig off-screen.
+  // /recon reversal uses 1 - progress; UI/telemetry keep normal progress.
+  const cameraProgress = captureInstability
+    ? 0
+    : reverseCameraProgress
+      ? 1 - smoothedProgress
+      : smoothedProgress;
 
   const telemetry = useReconTelemetry({ sectorIndex, sectorName, progress });
 

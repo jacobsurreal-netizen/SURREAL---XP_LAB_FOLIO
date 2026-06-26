@@ -315,9 +315,7 @@ const updatePhase = (delta: number, time: number) => {
     const elevationHeight = Math.tan(elevationRad) * baseRadius;
     orbit.setHeight(scroll.height + elevationHeight);
 
-    // Capture mode pushes the artifact farther back so it feels less front-present.
-    const captureRadiusBias = cap?.enabled ? 0.14 + Math.max(0, Math.min(1, cap.pressure)) * 0.2 : 0;
-    orbit.setRadius(baseRadius * (1 + scroll.radiusBias + captureRadiusBias));
+    orbit.setRadius(baseRadius * (1 + scroll.radiusBias));
 
     orbit.tick(delta);
 

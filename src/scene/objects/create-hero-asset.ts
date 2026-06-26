@@ -337,15 +337,17 @@ export async function createHeroAsset(options: HeroAssetOptions = {}): Promise<T
         asset.rotation.x = Math.sin(elapsedTime * 0.08) * 1.75 + phaseJitter * 1.4;
         asset.rotation.z = Math.cos(elapsedTime * 0.06) * 1.45 - phaseJitter;
 
-        // Unstable acquisition: the artifact drifts and depth-slips when the
-        // capture rig cannot hold a lock (capture mode only; never on /recon).
+        // Unstable acquisition: subtle drift while capture is active; reset when
+        // disabled so diagnosis phases do not leave the GLB off its origin.
         if (captureEnabled) {
           const inst = capturePhaseInstability;
           asset.position.x =
-            (Math.sin(captureTime * 21.0) * 0.012 + Math.sin(captureTime * 6.7) * 0.022) * inst;
+            (Math.sin(captureTime * 21.0) * 0.008 + Math.sin(captureTime * 6.7) * 0.012) * inst;
           asset.position.y =
-            (Math.cos(captureTime * 18.3) * 0.01 + Math.sin(captureTime * 3.9) * 0.016) * inst;
-          asset.position.z = Math.sin(captureTime * 4.6) * 0.06 * inst;
+            (Math.cos(captureTime * 18.3) * 0.006 + Math.sin(captureTime * 3.9) * 0.01) * inst;
+          asset.position.z = Math.sin(captureTime * 4.6) * 0.025 * inst;
+        } else if (getCaptureInstability?.()) {
+          asset.position.set(0, 0, 0);
         }
 
         const pulseFreq = 0.85;
