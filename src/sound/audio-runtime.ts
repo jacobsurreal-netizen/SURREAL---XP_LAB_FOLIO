@@ -1,72 +1,61 @@
-import { AudioChannel } from "./audio-channel"
-import { FocusLayerChannel } from "./focus-layer-channel"
-import { resolveFolioPlaybackMix, type FolioSectionPlayback } from "./folio-experience-mix"
-import type { AmbientLayer, SoundBehaviorState } from "./types"
-
-const AMBIENT_ASSETS: Partial<Record<AmbientLayer, string>> = {
-  VOID_PROFILE: "/audio/void_profile_loop_v001.wav",
-  IR_PROFILE: "/audio/ir_profile_loop_v001.wav",
-}
-
-const SECTION_ASSETS: Partial<Record<FolioSectionPlayback, string>> = {
-  EXPLORATION_PROFILE: "/audio/exploration_profile_loop_v001.wav",
-  IR_EXPLORATION_PROFILE: "/audio/ir_exploration_profile_loop_v001.wav",
-  CTA_PROFILE: "/audio/cta_profile_loop_v001.wav",
-}
+import { createHtmlAudioBackend } from "./backends/html-audio"
+import type { AudioBackend } from "./audio-runtime-types"
+import { resolveFolioPlaybackMix } from "./folio-experience-mix"
+import type { SoundBehaviorState, SoundBehaviorTrigger } from "./types"
 
 class AudioRuntime {
-  private readonly ambientChannel = new AudioChannel<AmbientLayer>({
-    logStyle: "ambient",
-    missingAssetLabel: "ambient",
-    playbackFailedLabel: "ambient",
-    assets: AMBIENT_ASSETS,
-    noneValue: "NONE",
-  })
-
-  private readonly sectionChannel = new AudioChannel<FolioSectionPlayback>({
-    logStyle: "section",
-    missingAssetLabel: "section",
-    playbackFailedLabel: "section",
-    assets: SECTION_ASSETS,
-    noneValue: "NONE",
-  })
-
-  private readonly focusChannel = new FocusLayerChannel()
+  constructor(private readonly backend: AudioBackend) {}
 
   prepareFromUserGesture(): void {
-    this.ambientChannel.ensurePlayer()
-    this.sectionChannel.ensurePlayer()
-    this.focusChannel.ensurePlayers()
+    this.backend.prepareFromUserGesture()
   }
 
   applyState(state: SoundBehaviorState, enabled: boolean): void {
     if (typeof window === "undefined") return
 
-    if (!enabled) {
-      this.ambientChannel.setOff()
-      this.sectionChannel.setOff()
-      this.focusChannel.setOff()
-      return
-    }
-
     const mix = resolveFolioPlaybackMix(state)
+    this.backend.applyLayerState(
+      {
+        ambient: mix.ambient,
+        section: mix.section,
+        focus: mix.focus,
+      },
+      enabled
+    )
+  }
 
-    this.ambientChannel.applyLayer(mix.ambient)
-    this.sectionChannel.applyLayer(mix.section)
-    this.focusChannel.applyLayer(mix.focus)
+  applyTriggerEvents(
+    triggerEvents: readonly SoundBehaviorTrigger[],
+    enabled: boolean
+  ): void {
+    this.backend.applyTriggerEvents(triggerEvents, enabled)
   }
 
   stop(): void {
-    this.ambientChannel.reset()
-    this.sectionChannel.reset()
-    this.focusChannel.reset()
+    this.backend.stop()
   }
 
   dispose(): void {
-    this.ambientChannel.dispose()
-    this.sectionChannel.dispose()
-    this.focusChannel.dispose()
+    this.backend.dispose()
   }
 }
 
-export const audioRuntime = new AudioRuntime()
+const defaultBackend = createHtmlAudioBackend()
+
+export const audioRuntime = new AudioRuntime(defaultBackend)
+
+/** @deprecated Prefer audioRuntime.applyTriggerEvents — retained for transitional imports. */
+export const eventRuntime = {
+  prepareFromUserGesture(): void {
+    audioRuntime.prepareFromUserGesture()
+  },
+  applyTriggerEvents(
+    triggerEvents: readonly SoundBehaviorTrigger[],
+    enabled: boolean
+  ): void {
+    audioRuntime.applyTriggerEvents(triggerEvents, enabled)
+  },
+  dispose(): void {
+    // Full teardown is owned by audioRuntime.dispose().
+  },
+}

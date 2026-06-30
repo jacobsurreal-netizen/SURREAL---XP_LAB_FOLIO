@@ -1,4 +1,6 @@
-export type AudioChannelLogStyle = "ambient" | "section"
+import type { AudioLoopPlaybackUnit } from "../../audio-runtime-types"
+
+type LoopUnitLogStyle = "ambient" | "section"
 
 function formatAmbientLogLabel(layer: string): string {
   switch (layer) {
@@ -28,34 +30,33 @@ function formatSectionLogLabel(layer: string): string {
   }
 }
 
-export interface AudioChannelConfig<T extends string> {
-  logStyle: AudioChannelLogStyle
+export interface HtmlAudioLoopUnitConfig<T extends string> {
+  logStyle: LoopUnitLogStyle
   missingAssetLabel: string
   playbackFailedLabel: string
   assets: Partial<Record<T, string>>
   noneValue: T
 }
 
-export class AudioChannel<T extends string> {
+export class HtmlAudioLoopUnit<T extends string> implements AudioLoopPlaybackUnit<T> {
   private audio: HTMLAudioElement | null = null
   private playing: T | null = null
   private lastApplied: T | "OFF" | null = null
   private loggedMissing = new Set<T>()
 
-  constructor(private readonly config: AudioChannelConfig<T>) {}
+  constructor(private readonly config: HtmlAudioLoopUnitConfig<T>) {}
 
-  ensurePlayer(): HTMLAudioElement | null {
-    if (typeof window === "undefined") return null
+  prepareFromUserGesture(): void {
+    if (typeof window === "undefined") return
     if (!this.audio) {
       this.audio = new Audio()
       this.audio.loop = true
       this.audio.preload = "auto"
       this.audio.volume = 0.5
     }
-    return this.audio
   }
 
-  applyLayer(layer: T): void {
+  update(layer: T): void {
     if (
       layer === this.lastApplied &&
       layer === this.playing &&
@@ -91,17 +92,20 @@ export class AudioChannel<T extends string> {
 
     this.logSwap(this.playing, layer)
 
-    const player = this.ensurePlayer()
-    if (!player) return
+    this.prepareFromUserGesture()
+    if (!this.audio) return
 
-    player.src = url
-    player.load()
+    this.audio.src = url
+    this.audio.load()
     this.playing = layer
     this.lastApplied = layer
 
-    void player.play().catch((error) => {
+    void this.audio.play().catch((error) => {
       if (process.env.NODE_ENV === "development") {
-        console.warn(`[AudioRuntime] ${this.config.playbackFailedLabel} playback failed:`, error)
+        console.warn(
+          `[AudioRuntime] ${this.config.playbackFailedLabel} playback failed:`,
+          error
+        )
       }
     })
   }
@@ -113,14 +117,14 @@ export class AudioChannel<T extends string> {
     this.lastApplied = "OFF"
   }
 
-  reset(): void {
+  stop(): void {
     this.halt()
     this.playing = null
     this.lastApplied = null
   }
 
   dispose(): void {
-    this.reset()
+    this.stop()
     this.audio = null
     this.loggedMissing.clear()
   }

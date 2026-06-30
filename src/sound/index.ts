@@ -12,6 +12,13 @@ export type {
   SoundBehaviorTrigger,
 } from "./types"
 
+export type {
+  AudioBackend,
+  AudioLoopPlaybackUnit,
+  AudioPlaybackUnit,
+  LayerPlaybackState,
+} from "./audio-runtime-types"
+
 export {
   collapseActiveProfile,
   computeEdgeTriggers,
@@ -26,6 +33,7 @@ export {
 } from "./behavior-mapper"
 
 export { audioRuntime } from "./audio-runtime"
+export { eventRuntime } from "./event-runtime"
 export {
   useSoundBehaviorSnapshot,
   useSoundBehaviorState,

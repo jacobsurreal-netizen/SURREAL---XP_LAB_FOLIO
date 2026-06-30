@@ -1,27 +1,21 @@
-import type { FocusLayer } from "./types"
-
-const FOCUS_PROBE_ASSETS = {
-  IR_PROFILE: "/audio/ir_profile_loop_v001.wav",
-  SCAN_PROFILE: "/audio/scan_profile_loop_v001.wav",
-} as const
-
-type FocusProbeProfile = keyof typeof FOCUS_PROBE_ASSETS
+import type { AudioPlaybackUnit } from "../../audio-runtime-types"
+import {
+  FOLIO_FOCUS_PROBE_ASSETS,
+  type FolioFocusProbeProfile,
+} from "../../folio-audio-palette"
+import type { FocusLayer } from "../../types"
 
 const FOCUS_ACTIVE_LABEL = "IR + SCAN"
 
 type FocusAppliedState = "OFF" | "NONE" | "ACTIVE"
 
-/**
- * Focus layer playback — probe state (IR + SCAN stacked when SCAN mode is active).
- * When state.focusLayer is SCAN_PROFILE, both probe loops run simultaneously.
- */
-export class FocusLayerChannel {
+export class HtmlAudioFocusUnit implements AudioPlaybackUnit {
   private irPlayer: HTMLAudioElement | null = null
   private scanPlayer: HTMLAudioElement | null = null
   private lastApplied: FocusAppliedState | null = null
-  private loggedMissing = new Set<FocusProbeProfile>()
+  private loggedMissing = new Set<FolioFocusProbeProfile>()
 
-  ensurePlayers(): void {
+  prepareFromUserGesture(): void {
     if (typeof window === "undefined") return
 
     if (!this.irPlayer) {
@@ -32,7 +26,7 @@ export class FocusLayerChannel {
     }
   }
 
-  applyLayer(focusLayer: FocusLayer): void {
+  update(focusLayer: FocusLayer): void {
     const shouldPlay = focusLayer === "SCAN_PROFILE"
 
     if (shouldPlay && this.isActiveAndPlaying()) {
@@ -53,7 +47,7 @@ export class FocusLayerChannel {
       console.info(`[Audio Runtime]\nFocus\nNONE → ${FOCUS_ACTIVE_LABEL}`)
     }
 
-    this.ensurePlayers()
+    this.prepareFromUserGesture()
     this.startProbeProfile("IR_PROFILE", this.irPlayer)
     this.startProbeProfile("SCAN_PROFILE", this.scanPlayer)
     this.lastApplied = "ACTIVE"
@@ -65,13 +59,13 @@ export class FocusLayerChannel {
     this.lastApplied = "OFF"
   }
 
-  reset(): void {
+  stop(): void {
     this.haltAll()
     this.lastApplied = null
   }
 
   dispose(): void {
-    this.reset()
+    this.stop()
     this.irPlayer = null
     this.scanPlayer = null
     this.loggedMissing.clear()
@@ -98,12 +92,12 @@ export class FocusLayerChannel {
   }
 
   private startProbeProfile(
-    profile: FocusProbeProfile,
+    profile: FolioFocusProbeProfile,
     player: HTMLAudioElement | null
   ): void {
     if (!player) return
 
-    const url = FOCUS_PROBE_ASSETS[profile]
+    const url = FOLIO_FOCUS_PROBE_ASSETS[profile]
     if (!url) {
       if (!this.loggedMissing.has(profile)) {
         console.info(`Missing focus asset:\n${profile}`)
