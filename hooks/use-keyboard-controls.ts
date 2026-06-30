@@ -7,6 +7,7 @@ interface UseKeyboardControlsOptions {
   sectorIndex: number
   toggleSpectrum: () => void
   cycleLang: () => void
+  toggleSound?: () => void
 }
 
 /**
@@ -20,6 +21,7 @@ interface UseKeyboardControlsOptions {
  * Toggles:
  *   I = spectrum (COLOR/IR)
  *   L = cycle language
+ *   M = sound on/off
  *   Escape = clear focus, return to idle
  */
 export function useKeyboardControls({
@@ -27,6 +29,7 @@ export function useKeyboardControls({
   sectorIndex,
   toggleSpectrum,
   cycleLang,
+  toggleSound,
 }: UseKeyboardControlsOptions) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -75,6 +78,13 @@ export function useKeyboardControls({
           e.preventDefault()
           cycleLang()
           break
+        case "m":
+        case "M":
+          if (toggleSound) {
+            e.preventDefault()
+            toggleSound()
+          }
+          break
         case "Escape": {
           e.preventDefault()
           // Clear focus, return to idle
@@ -88,5 +98,5 @@ export function useKeyboardControls({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToSector, sectorIndex, toggleSpectrum, cycleLang])
+  }, [goToSector, sectorIndex, toggleSpectrum, cycleLang, toggleSound])
 }

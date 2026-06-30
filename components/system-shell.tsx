@@ -15,6 +15,7 @@ import { HudSkeleton } from "@/src/hud/hud-skeleton"
 import { SdiOverlay } from "@/src/sdi/sdi-overlay"
 import { useSound } from "@/src/template-kit/hooks"
 import { engine } from "@/src/template-kit/engine/core"
+import { audioRuntime } from "@/src/sound/audio-runtime"
 import { SoundLayer } from "./sound-layer"
 
 interface SystemShellProps {
@@ -36,13 +37,17 @@ export function SystemShell({ children }: SystemShellProps) {
   const hudOpacity = useHudInactivity(sectorIndex)
   const { lang, cycle: cycleLang, t } = useLanguage()
   const { soundEnabled } = useSound()
-  const onToggleSound = () => engine.dispatch("COMMAND/TOGGLE_SOUND")
+  const onToggleSound = () => {
+    audioRuntime.prepareFromUserGesture()
+    engine.dispatch("COMMAND/TOGGLE_SOUND")
+  }
 
   useKeyboardControls({
     goToSector,
     sectorIndex,
     toggleSpectrum,
     cycleLang,
+    toggleSound: onToggleSound,
   })
 
   // 🔥 DEV: SCAN toggle on "S"
