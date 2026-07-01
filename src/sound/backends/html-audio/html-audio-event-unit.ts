@@ -1,11 +1,17 @@
 import { FOLIO_TRIGGER_ASSETS } from "../../folio-audio-palette"
 import type { SoundBehaviorTrigger } from "../../types"
+import { toHtmlAudioVolume } from "./html-audio-gain"
 
 export class HtmlAudioEventUnit {
   private loggedMissing = new Set<SoundBehaviorTrigger>()
   private loggedUnmapped = new Set<SoundBehaviorTrigger>()
+  private effectiveGain = 1
 
   prepareFromUserGesture(): void {}
+
+  setEffectiveGain(gain: number): void {
+    this.effectiveGain = gain
+  }
 
   playTriggers(triggerEvents: readonly SoundBehaviorTrigger[]): void {
     if (typeof window === "undefined" || triggerEvents.length === 0) return
@@ -36,7 +42,7 @@ export class HtmlAudioEventUnit {
     const audio = new Audio(url)
     audio.loop = false
     audio.preload = "auto"
-    audio.volume = 0.5
+    audio.volume = toHtmlAudioVolume(this.effectiveGain)
 
     void audio.play().catch((error) => {
       if (!this.loggedMissing.has(trigger)) {

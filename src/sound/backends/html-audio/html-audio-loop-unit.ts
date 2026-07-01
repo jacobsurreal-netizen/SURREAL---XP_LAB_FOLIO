@@ -1,4 +1,5 @@
 import type { AudioLoopPlaybackUnit } from "../../audio-runtime-types"
+import { toHtmlAudioVolume } from "./html-audio-gain"
 
 type LoopUnitLogStyle = "ambient" | "section"
 
@@ -43,8 +44,14 @@ export class HtmlAudioLoopUnit<T extends string> implements AudioLoopPlaybackUni
   private playing: T | null = null
   private lastApplied: T | "OFF" | null = null
   private loggedMissing = new Set<T>()
+  private effectiveGain = 1
 
   constructor(private readonly config: HtmlAudioLoopUnitConfig<T>) {}
+
+  setEffectiveGain(gain: number): void {
+    this.effectiveGain = gain
+    this.applyVolume()
+  }
 
   prepareFromUserGesture(): void {
     if (typeof window === "undefined") return
@@ -52,7 +59,7 @@ export class HtmlAudioLoopUnit<T extends string> implements AudioLoopPlaybackUni
       this.audio = new Audio()
       this.audio.loop = true
       this.audio.preload = "auto"
-      this.audio.volume = 0.5
+      this.applyVolume()
     }
   }
 
@@ -172,5 +179,10 @@ export class HtmlAudioLoopUnit<T extends string> implements AudioLoopPlaybackUni
     this.audio.currentTime = 0
     this.audio.removeAttribute("src")
     this.audio.load()
+  }
+
+  private applyVolume(): void {
+    if (!this.audio) return
+    this.audio.volume = toHtmlAudioVolume(this.effectiveGain)
   }
 }

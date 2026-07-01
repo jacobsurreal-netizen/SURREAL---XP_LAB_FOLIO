@@ -4,6 +4,7 @@ import {
   type FolioFocusProbeProfile,
 } from "../../folio-audio-palette"
 import type { FocusLayer } from "../../types"
+import { toHtmlAudioVolume } from "./html-audio-gain"
 
 const FOCUS_ACTIVE_LABEL = "IR + SCAN"
 
@@ -14,6 +15,13 @@ export class HtmlAudioFocusUnit implements AudioPlaybackUnit {
   private scanPlayer: HTMLAudioElement | null = null
   private lastApplied: FocusAppliedState | null = null
   private loggedMissing = new Set<FolioFocusProbeProfile>()
+  private effectiveGain = 1
+
+  setEffectiveGain(gain: number): void {
+    this.effectiveGain = gain
+    this.applyVolume(this.irPlayer)
+    this.applyVolume(this.scanPlayer)
+  }
 
   prepareFromUserGesture(): void {
     if (typeof window === "undefined") return
@@ -75,7 +83,7 @@ export class HtmlAudioFocusUnit implements AudioPlaybackUnit {
     const audio = new Audio()
     audio.loop = true
     audio.preload = "auto"
-    audio.volume = 0.5
+    this.applyVolume(audio)
     return audio
   }
 
@@ -131,5 +139,10 @@ export class HtmlAudioFocusUnit implements AudioPlaybackUnit {
   private haltAll(): void {
     this.haltPlayer(this.irPlayer)
     this.haltPlayer(this.scanPlayer)
+  }
+
+  private applyVolume(player: HTMLAudioElement | null): void {
+    if (!player) return
+    player.volume = toHtmlAudioVolume(this.effectiveGain)
   }
 }

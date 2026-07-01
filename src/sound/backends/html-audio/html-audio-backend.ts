@@ -1,4 +1,4 @@
-import type { AudioBackend, LayerPlaybackState } from "../../audio-runtime-types"
+import type { AudioBackend, EffectiveChannelGains, LayerPlaybackState } from "../../audio-runtime-types"
 import type { FolioSectionPlayback } from "../../folio-experience-mix"
 import {
   FOLIO_AMBIENT_ASSETS,
@@ -28,6 +28,13 @@ export class HtmlAudioBackend implements AudioBackend {
 
   private readonly focusUnit = new HtmlAudioFocusUnit()
   private readonly eventUnit = new HtmlAudioEventUnit()
+
+  setEffectiveGains(gains: EffectiveChannelGains): void {
+    this.ambientUnit.setEffectiveGain(gains.ambient)
+    this.sectionUnit.setEffectiveGain(gains.section)
+    this.focusUnit.setEffectiveGain(gains.focus)
+    this.eventUnit.setEffectiveGain(gains.event)
+  }
 
   prepareFromUserGesture(): void {
     this.ambientUnit.prepareFromUserGesture()

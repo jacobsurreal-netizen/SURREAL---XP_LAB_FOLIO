@@ -16,8 +16,12 @@ export type {
   AudioBackend,
   AudioLoopPlaybackUnit,
   AudioPlaybackUnit,
+  EffectiveChannelGains,
   LayerPlaybackState,
 } from "./audio-runtime-types"
+
+export type { ChannelGainState, GainChannel } from "./gain-layer"
+export { DEFAULT_CHANNEL_GAIN_STATE } from "./gain-layer"
 
 export {
   collapseActiveProfile,
