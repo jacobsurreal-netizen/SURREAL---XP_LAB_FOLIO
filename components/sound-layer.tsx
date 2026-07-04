@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react"
 import { collapseActiveProfile } from "@/src/sound/behavior-mapper"
-import { SoundDebugHUD } from "@/src/sound/sound-debug-hud"
 import { useAudioRuntime } from "@/src/sound/use-audio-runtime"
 import { useSoundBehaviorState } from "@/src/sound/use-sound-behavior"
 
@@ -35,6 +34,5 @@ export function SoundLayer() {
     previousProfileRef.current = collapsedProfile
   }, [state, collapsedProfile])
 
-  return <SoundDebugHUD behavior={state} />
+  return null
 }
-

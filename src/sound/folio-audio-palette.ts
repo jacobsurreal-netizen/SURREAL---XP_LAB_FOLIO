@@ -31,3 +31,33 @@ export const FOLIO_TRIGGER_ASSETS: Partial<Record<SoundBehaviorTrigger, string>>
   CTA_SIGNAL_SAMPLE: "/audio/cta_signal.wav",
   SECTOR_CHANGE: "/audio/sector_change.wav",
 }
+
+function collectUniqueUrls(values: readonly (string | undefined)[]): string[] {
+  const urls = new Set<string>()
+  for (const url of values) {
+    if (url) urls.add(url)
+  }
+  return [...urls]
+}
+
+/** Sustained loop assets — ambient, section, and focus probes. */
+export function listFolioSustainedAssetUrls(): readonly string[] {
+  return collectUniqueUrls([
+    ...Object.values(FOLIO_AMBIENT_ASSETS),
+    ...Object.values(FOLIO_SECTION_ASSETS),
+    ...Object.values(FOLIO_FOCUS_PROBE_ASSETS),
+  ])
+}
+
+/** One-shot trigger assets. */
+export function listFolioTriggerAssetUrls(): readonly string[] {
+  return collectUniqueUrls(Object.values(FOLIO_TRIGGER_ASSETS))
+}
+
+/** All FOLIO palette assets, deduplicated. */
+export function listFolioAssetUrls(): readonly string[] {
+  return collectUniqueUrls([
+    ...listFolioSustainedAssetUrls(),
+    ...listFolioTriggerAssetUrls(),
+  ])
+}

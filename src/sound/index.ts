@@ -14,10 +14,14 @@ export type {
 
 export type {
   AudioBackend,
+  AudioBackendDiagnostics,
   AudioLoopPlaybackUnit,
   AudioPlaybackUnit,
   EffectiveChannelGains,
+  EventPlaybackUnit,
+  HtmlAudioBackendDiagnostics,
   LayerPlaybackState,
+  WebAudioBackendDiagnostics,
 } from "./audio-runtime-types"
 
 export type { ChannelGainState, GainChannel } from "./gain-layer"
@@ -36,7 +40,8 @@ export {
   resolveSectionLayer,
 } from "./behavior-mapper"
 
-export { audioRuntime } from "./audio-runtime"
+export { audioRuntime, createHtmlAudioBackend, createWebAudioBackend } from "./audio-runtime"
+export type { AudioDebugSnapshot } from "./audio-runtime"
 export { eventRuntime } from "./event-runtime"
 export {
   useSoundBehaviorSnapshot,

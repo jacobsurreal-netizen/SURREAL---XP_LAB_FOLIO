@@ -3,6 +3,7 @@
 import { WorldLayer } from "@/components/world-layer"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
 import { SoundLayer } from "@/components/sound-layer"
+import { DebugManager } from "@/src/debug/debug-manager"
 import { ReconHUD } from "./recon-hud"
 import { ReconInitOverlay } from "./recon-init-overlay"
 import { useReconTelemetry } from "./use-recon-telemetry"
@@ -207,6 +208,7 @@ export function ReconShell({ children, bypassInit = false, captureInstability, r
           <ReconInitOverlay phase={initPhase} bootStep={bootStep} onInitialize={startBoot} />
         )}
         <SoundLayer />
+        <DebugManager moduleIds={["sound"]} />
       </div>
       <div className="relative z-0 w-full overflow-x-hidden min-h-screen pointer-events-none">
         {children}

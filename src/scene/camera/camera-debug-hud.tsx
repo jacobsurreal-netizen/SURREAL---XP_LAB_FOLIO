@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import {
   getCameraDebugState,
   subscribeCameraDebug,
-  toggleCameraDebug,
   type CameraDebugState,
 } from "./scroll-camera-bridge"
 
@@ -12,39 +11,12 @@ function formatNumber(value: number, digits = 3): string {
   return Number.isFinite(value) ? value.toFixed(digits) : "—"
 }
 
-export function CameraDebugHUD() {
+export function CameraDebugPanel() {
   const [state, setState] = useState<CameraDebugState>(getCameraDebugState())
 
   useEffect(() => {
     return subscribeCameraDebug(setState)
   }, [])
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) return
-      if (event.key.toLowerCase() !== "d") return
-
-      const target = event.target as HTMLElement | null
-      const tag = target?.tagName?.toLowerCase()
-
-      if (
-        tag === "input" ||
-        tag === "textarea" ||
-        target?.isContentEditable
-      ) {
-        return
-      }
-
-      toggleCameraDebug()
-    }
-
-    window.addEventListener("keydown", onKeyDown)
-    return () => {
-      window.removeEventListener("keydown", onKeyDown)
-    }
-  }, [])
-
-  if (!state.visible) return null
 
   return (
     <div
@@ -82,8 +54,11 @@ export function CameraDebugHUD() {
       <div>lookBiasY: {formatNumber(state.lookBiasY)}</div>
 
       <div style={{ marginTop: 8, opacity: 0.7 }}>
-        toggle: key "D"
+        toggle: key &quot;D&quot;
       </div>
     </div>
   )
 }
+
+/** @deprecated Use CameraDebugPanel via debug module registration. */
+export const CameraDebugHUD = CameraDebugPanel

@@ -3,14 +3,20 @@ import type { FolioSectionPlayback } from "../../folio-experience-mix"
 import {
   FOLIO_AMBIENT_ASSETS,
   FOLIO_SECTION_ASSETS,
+  listFolioSustainedAssetUrls,
+  listFolioTriggerAssetUrls,
 } from "../../folio-audio-palette"
 import type { AmbientLayer, SoundBehaviorTrigger } from "../../types"
-import { HtmlAudioEventUnit } from "./html-audio-event-unit"
-import { HtmlAudioFocusUnit } from "./html-audio-focus-unit"
-import { HtmlAudioLoopUnit } from "./html-audio-loop-unit"
+import { calibrateWebAudioGain } from "./web-audio-gain"
+import { WebAudioContextManager } from "./web-audio-context"
+import { WebAudioEventUnit } from "./web-audio-event-unit"
+import { WebAudioFocusUnit } from "./web-audio-focus-unit"
+import { WebAudioLoopUnit } from "./web-audio-loop-unit"
 
-export class HtmlAudioBackend implements AudioBackend {
-  private readonly ambientUnit = new HtmlAudioLoopUnit<AmbientLayer>({
+export class WebAudioBackend implements AudioBackend {
+  private readonly context = new WebAudioContextManager()
+
+  private readonly ambientUnit = new WebAudioLoopUnit<AmbientLayer>(this.context, {
     channel: "ambient",
     missingAssetLabel: "ambient",
     playbackFailedLabel: "ambient",
@@ -18,7 +24,7 @@ export class HtmlAudioBackend implements AudioBackend {
     noneValue: "NONE",
   })
 
-  private readonly sectionUnit = new HtmlAudioLoopUnit<FolioSectionPlayback>({
+  private readonly sectionUnit = new WebAudioLoopUnit<FolioSectionPlayback>(this.context, {
     channel: "section",
     missingAssetLabel: "section",
     playbackFailedLabel: "section",
@@ -26,17 +32,20 @@ export class HtmlAudioBackend implements AudioBackend {
     noneValue: "NONE",
   })
 
-  private readonly focusUnit = new HtmlAudioFocusUnit()
-  private readonly eventUnit = new HtmlAudioEventUnit()
+  private readonly focusUnit = new WebAudioFocusUnit(this.context)
+  private readonly eventUnit = new WebAudioEventUnit(this.context)
 
   setEffectiveGains(gains: EffectiveChannelGains): void {
-    this.ambientUnit.setEffectiveGain(gains.ambient)
-    this.sectionUnit.setEffectiveGain(gains.section)
-    this.focusUnit.setEffectiveGain(gains.focus)
-    this.eventUnit.setEffectiveGain(gains.event)
+    this.ambientUnit.setEffectiveGain(calibrateWebAudioGain(gains.ambient))
+    this.sectionUnit.setEffectiveGain(calibrateWebAudioGain(gains.section))
+    this.focusUnit.setEffectiveGain(calibrateWebAudioGain(gains.focus))
+    this.eventUnit.setEffectiveGain(calibrateWebAudioGain(gains.event))
   }
 
   prepareFromUserGesture(): void {
+    this.context.prepareFromUserGesture()
+    this.context.preloadBuffers(listFolioSustainedAssetUrls())
+    this.context.preloadBuffers(listFolioTriggerAssetUrls())
     this.ambientUnit.prepareFromUserGesture()
     this.sectionUnit.prepareFromUserGesture()
     this.focusUnit.prepareFromUserGesture()
@@ -82,13 +91,18 @@ export class HtmlAudioBackend implements AudioBackend {
     this.sectionUnit.dispose()
     this.focusUnit.dispose()
     this.eventUnit.dispose()
+    this.context.dispose()
   }
 
   getDiagnostics() {
-    return { backendId: "html-audio" as const }
+    const diagnostics = this.context.getDiagnostics()
+    return {
+      backendId: "web-audio" as const,
+      ...diagnostics,
+    }
   }
 }
 
-export function createHtmlAudioBackend(): AudioBackend {
-  return new HtmlAudioBackend()
+export function createWebAudioBackend(): AudioBackend {
+  return new WebAudioBackend()
 }

@@ -9,16 +9,20 @@ export function useAudioRuntime(state: SoundBehaviorState): void {
   const { soundEnabled } = useSound()
 
   useEffect(() => {
-    audioRuntime.applyState(state, soundEnabled)
+    audioRuntime.observeBehavior(state, soundEnabled)
+    audioRuntime.applyPlaybackIfNeeded(state, soundEnabled)
   }, [state, soundEnabled])
 
   useEffect(() => {
+    if (state.triggerEvents.length === 0) {
+      return
+    }
     audioRuntime.applyTriggerEvents(state.triggerEvents, soundEnabled)
   }, [state.triggerEvents, soundEnabled])
 
   useEffect(() => {
     return () => {
-      audioRuntime.dispose()
+      audioRuntime.stop()
     }
   }, [])
 }

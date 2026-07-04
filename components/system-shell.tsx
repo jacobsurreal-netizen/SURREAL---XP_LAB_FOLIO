@@ -10,7 +10,7 @@ import { useHudInactivity } from "@/hooks/use-hud-inactivity"
 import { useLanguage } from "@/hooks/use-language"
 import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import { ThreeRuntimeAdapter } from "@/src/scene/three-adapter"
-import { CameraDebugHUD } from "@/src/scene/camera/camera-debug-hud"
+import { DebugManager } from "@/src/debug/debug-manager"
 import { HudSkeleton } from "@/src/hud/hud-skeleton"
 import { SdiOverlay } from "@/src/sdi/sdi-overlay"
 import { useSound } from "@/src/template-kit/hooks"
@@ -108,7 +108,7 @@ export function SystemShell({ children }: SystemShellProps) {
             spectrumMode: mode,
           }}
         />
-        <CameraDebugHUD />
+        <DebugManager moduleIds={["sound", "camera"]} />
       </div>
 
       {/* Layer 20: IR overlay */}

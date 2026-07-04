@@ -1,9 +1,10 @@
 import type { AudioLoopPlaybackUnit } from "../../audio-runtime-types"
 import { LoopChannelController } from "../../playback/loop-channel-controller"
 import type { LoopChannelKind } from "../../playback/playback-log"
-import { HtmlLoopPlaybackAdapter } from "./html-loop-playback-adapter"
+import type { WebAudioContextManager } from "./web-audio-context"
+import { WebLoopPlaybackAdapter } from "./web-loop-playback-adapter"
 
-export interface HtmlAudioLoopUnitConfig<T extends string> {
+export interface WebAudioLoopUnitConfig<T extends string> {
   channel: LoopChannelKind
   missingAssetLabel: string
   playbackFailedLabel: string
@@ -11,15 +12,18 @@ export interface HtmlAudioLoopUnitConfig<T extends string> {
   noneValue: T
 }
 
-export class HtmlAudioLoopUnit<T extends string> implements AudioLoopPlaybackUnit<T> {
+export class WebAudioLoopUnit<T extends string> implements AudioLoopPlaybackUnit<T> {
   private readonly controller: LoopChannelController
   private readonly loggedMissing = new Set<T>()
 
-  constructor(private readonly config: HtmlAudioLoopUnitConfig<T>) {
+  constructor(
+    context: WebAudioContextManager,
+    private readonly config: WebAudioLoopUnitConfig<T>
+  ) {
     this.controller = new LoopChannelController({
       channel: config.channel,
       noneLayer: config.noneValue,
-      adapter: new HtmlLoopPlaybackAdapter(),
+      adapter: new WebLoopPlaybackAdapter(context),
       playbackFailedLabel: config.playbackFailedLabel,
     })
   }

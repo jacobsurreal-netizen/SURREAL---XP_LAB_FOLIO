@@ -29,10 +29,38 @@ export interface AudioLoopPlaybackUnit<T extends string> extends AudioPlaybackUn
   update(layer: T): void
 }
 
-/** Backend contract — HTMLAudio today, WebAudio in M3. */
+/** One-shot event channel — same lifecycle surface as sustained units for silence. */
+export interface EventPlaybackUnit {
+  prepareFromUserGesture(): void
+  setEffectiveGain(gain: number): void
+  setOff(): void
+  stop(): void
+  dispose(): void
+  playTriggers(triggerEvents: readonly SoundBehaviorTrigger[]): void
+}
+
+/** Backend contract — WebAudio production default; HtmlAudio fallback. */
+export interface WebAudioBackendDiagnostics {
+  backendId: "web-audio"
+  contextState: AudioContextState | "none"
+  residentUrlCount: number
+  failedUrls: readonly string[]
+  pendingLoadCount: number
+}
+
+export interface HtmlAudioBackendDiagnostics {
+  backendId: "html-audio"
+}
+
+export type AudioBackendDiagnostics =
+  | WebAudioBackendDiagnostics
+  | HtmlAudioBackendDiagnostics
+
 export interface AudioBackend {
   prepareFromUserGesture(): void
   setEffectiveGains(gains: EffectiveChannelGains): void
+  /** Full lifecycle shutdown — stop playback, release objects, invalidate async sessions. */
+  silenceAll(): void
   applyLayerState(state: LayerPlaybackState, enabled: boolean): void
   applyTriggerEvents(
     triggerEvents: readonly SoundBehaviorTrigger[],
@@ -40,4 +68,5 @@ export interface AudioBackend {
   ): void
   stop(): void
   dispose(): void
+  getDiagnostics?(): AudioBackendDiagnostics
 }

@@ -2,12 +2,16 @@ import type { EventPlaybackUnit } from "../../audio-runtime-types"
 import { FOLIO_TRIGGER_ASSETS } from "../../folio-audio-palette"
 import type { SoundBehaviorTrigger } from "../../types"
 import { EventChannelController } from "../../playback/event-channel-controller"
-import { HtmlEventPlaybackAdapter } from "./html-event-playback-adapter"
+import type { WebAudioContextManager } from "./web-audio-context"
+import { WebEventPlaybackAdapter } from "./web-event-playback-adapter"
 
-export class HtmlAudioEventUnit implements EventPlaybackUnit {
-  private readonly controller = new EventChannelController(new HtmlEventPlaybackAdapter())
-  private readonly loggedMissing = new Set<SoundBehaviorTrigger>()
+export class WebAudioEventUnit implements EventPlaybackUnit {
+  private readonly controller: EventChannelController
   private readonly loggedUnmapped = new Set<SoundBehaviorTrigger>()
+
+  constructor(context: WebAudioContextManager) {
+    this.controller = new EventChannelController(new WebEventPlaybackAdapter(context))
+  }
 
   prepareFromUserGesture(): void {
     this.controller.prepareFromUserGesture()
@@ -49,7 +53,6 @@ export class HtmlAudioEventUnit implements EventPlaybackUnit {
 
   dispose(): void {
     this.controller.dispose()
-    this.loggedMissing.clear()
     this.loggedUnmapped.clear()
   }
 }

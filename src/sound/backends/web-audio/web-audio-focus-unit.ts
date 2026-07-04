@@ -5,11 +5,16 @@ import {
 } from "../../folio-audio-palette"
 import { FocusChannelController } from "../../playback/focus-channel-controller"
 import type { FocusLayer } from "../../types"
-import { HtmlFocusPlaybackAdapter } from "./html-focus-playback-adapter"
+import type { WebAudioContextManager } from "./web-audio-context"
+import { WebFocusPlaybackAdapter } from "./web-focus-playback-adapter"
 
-export class HtmlAudioFocusUnit implements AudioPlaybackUnit {
-  private readonly controller = new FocusChannelController(new HtmlFocusPlaybackAdapter())
+export class WebAudioFocusUnit implements AudioPlaybackUnit {
+  private readonly controller: FocusChannelController
   private readonly loggedMissing = new Set<FolioFocusProbeProfile>()
+
+  constructor(context: WebAudioContextManager) {
+    this.controller = new FocusChannelController(new WebFocusPlaybackAdapter(context))
+  }
 
   prepareFromUserGesture(): void {
     this.controller.prepareFromUserGesture()
